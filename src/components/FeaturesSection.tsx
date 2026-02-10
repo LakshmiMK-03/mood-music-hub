@@ -1,35 +1,25 @@
-import { Brain, Music, Activity, Shield, BarChart3, Sparkles } from "lucide-react";
+import { Brain, Music, Activity, BarChart3, BookOpen, Wind } from "lucide-react";
 
 const features = [
   {
     icon: Brain,
     title: "Emotion Detection",
-    description: "Advanced AI analyzes facial expressions and physiological signals to accurately detect your emotional state in real-time.",
-  },
-  {
-    icon: Music,
-    title: "Music Therapy",
-    description: "Curated playlists tailored to your mood, leveraging music psychology to help regulate emotions and reduce stress.",
-  },
-  {
-    icon: Activity,
-    title: "Activity Suggestions",
-    description: "Personalized wellness activities including meditation, breathing exercises, and physical activities based on your stress levels.",
+    description: "AI analyzes facial expressions, text sentiment, and voice to accurately detect your emotional state in real-time.",
   },
   {
     icon: BarChart3,
-    title: "Stress Analytics",
-    description: "Track your emotional patterns over time with insightful visualizations and progress reports.",
+    title: "Stress Analysis",
+    description: "Evaluates your stress level (Low / Medium / High) based on detected emotional patterns and intensity.",
   },
   {
-    icon: Shield,
-    title: "Privacy First",
-    description: "All emotion data is processed locally and encrypted. Your mental health data stays private and secure.",
+    icon: Music,
+    title: "Music Recommendation",
+    description: "Curated playlists tailored to your mood — calm music for stress, energetic tracks for happiness.",
   },
   {
-    icon: Sparkles,
-    title: "Adaptive Learning",
-    description: "The system learns from your preferences and feedback to deliver increasingly accurate recommendations.",
+    icon: Wind,
+    title: "Relaxation Tips",
+    description: "Breathing exercises, mindfulness tips, and break reminders to help manage stress effectively.",
   },
 ];
 
@@ -38,15 +28,15 @@ const FeaturesSection = () => {
     <section className="py-24 bg-muted/30">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-            Intelligent <span className="text-gradient">Features</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 font-display">
+            Key <span className="text-gradient">Features</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             A comprehensive system designed to understand and improve your emotional well-being.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <div
               key={feature.title}

@@ -1,5 +1,6 @@
 import { ArrowRight, Brain, Music, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
@@ -20,24 +21,26 @@ const HeroSection = () => {
 
         {/* Heading */}
         <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          Smart Music &{" "}
-          <span className="text-gradient">Activity</span>
-          <br />
-          Recommendation System
+          Music That Understands{" "}
+          <span className="text-gradient">Your Emotions</span>
         </h1>
 
         <p className="max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground mb-10 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          Harness the power of emotion detection and AI to manage stress through personalized music and activity recommendations.
+          Detect emotions & stress → Get personalized music → Relax. Powered by NLP, Machine Learning & Computer Vision.
         </p>
 
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
-          <Button size="lg" className="gradient-primary text-primary-foreground px-8 py-6 text-lg rounded-full shadow-glow hover:opacity-90 transition-opacity">
-            Get Started <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-          <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-full border-primary/30 hover:bg-primary/5">
-            Learn More
-          </Button>
+          <Link to="/analyze">
+            <Button size="lg" className="gradient-primary text-primary-foreground px-8 py-6 text-lg rounded-full shadow-glow hover:opacity-90 transition-opacity">
+              Start Emotion Analysis <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+          <Link to="/about">
+            <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-full border-primary/30 hover:bg-primary/5">
+              Learn More
+            </Button>
+          </Link>
         </div>
 
         {/* Floating icons */}

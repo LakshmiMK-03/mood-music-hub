@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container">
+        <div class="text-center mb-12">
+            <h1>Music <span class="text-gradient">Recommendations</span></h1>
+            <p style="color: var(--muted-foreground);">Personalized playlists based on your detected emotion.</p>
+        </div>
+
+        <div class="emotions-grid mb-10">
+            <button onclick="selectEmotion('Happy')" class="emotion-btn active" data-emotion="Happy">Happy</button>
+            <button onclick="selectEmotion('Sad')" class="emotion-btn" data-emotion="Sad">Sad</button>
+            <button onclick="selectEmotion('Angry')" class="emotion-btn" data-emotion="Angry">Angry</button>
+            <button onclick="selectEmotion('Neutral')" class="emotion-btn" data-emotion="Neutral">Neutral</button>
+            <button onclick="selectEmotion('Fearful')" class="emotion-btn" data-emotion="Fearful">Fearful</button>
+        </div>
+
+        <div class="music-layout">
+            <!-- Playlist -->
+            <div class="card overflow-hidden">
+                <div class="playlist-header">
+                    <h3 id="playlist-title" style="color: white; margin-bottom: 0.25rem;">Playlist Name</h3>
+                    <span id="current-emotion-badge" class="badge">Emotion: Happy</span>
+                </div>
+                <div id="playlist-tracks" class="tracks-list">
+                    <!-- Tracks injected via JS -->
+                </div>
+            </div>
+
+            <!-- Player -->
+            <div class="card p-6">
+                <h3 class="mb-4">🎧 Now Playing</h3>
+                <div class="text-center">
+                    <div class="album-art">
+                        <i data-lucide="music" style="color: white; width: 3rem; height: 3rem;"></i>
+                    </div>
+                    <h4 id="player-title" style="margin-bottom: 0.25rem;">Select a track</h4>
+                    <p id="player-artist" style="color: var(--muted-foreground); font-size: 0.875rem;">Artist</p>
+                </div>
+
+                <div class="controls mt-4">
+                    <button class="control-btn"><i data-lucide="skip-back"></i></button>
+                    <button class="play-btn"><i data-lucide="play"></i></button>
+                    <button class="control-btn"><i data-lucide="skip-forward"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .emotions-grid {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .emotion-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 999px;
+        border: none;
+        background: var(--muted);
+        color: var(--muted-foreground);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .emotion-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .music-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+        .music-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .playlist-header {
+        background: var(--gradient-primary);
+        padding: 1.5rem;
+    }
+
+    .badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+    }
+
+    .tracks-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .track-item {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--muted);
+        background: none;
+        border-left: none;
+        /* Reset button defaults */
+        border-right: none;
+        border-top: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .track-item:hover {
+        background: var(--muted);
+    }
+
+    .album-art {
+        width: 8rem;
+        height: 8rem;
+        border-radius: 1rem;
+        background: var(--gradient-primary);
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .control-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+    }
+
+    .play-btn {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .play-btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

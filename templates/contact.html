@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container text-center">
+        <h1>Get in <span class="text-gradient">Touch</span></h1>
+        <p style="color: var(--muted-foreground); margin-bottom: 3rem;">We'd love to hear from you.</p>
+
+        <div class="card p-8" style="max-width: 600px; margin: 0 auto;">
+            <form>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Name</label>
+                    <input type="text" class="input-field" placeholder="Your Name">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Email</label>
+                    <input type="email" class="input-field" placeholder="your@email.com">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Message</label>
+                    <textarea class="input-field" rows="5" placeholder="How can we help?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

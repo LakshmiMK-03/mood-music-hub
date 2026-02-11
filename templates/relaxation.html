@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container">
+        <div class="text-center mb-12">
+            <h1>Relaxation <span class="text-gradient">Tips</span></h1>
+            <p style="color: var(--muted-foreground);">Manage stress with breathing exercises and mindfulness.</p>
+        </div>
+
+        <div style="max-width: 800px; margin: 0 auto; display: grid; gap: 2rem;">
+            <!-- Breathing -->
+            <div class="card p-8 text-center">
+                <h3>🌬 Breathing Exercise</h3>
+                <div style="margin: 2rem 0;">
+                    <div id="breath-circle" class="breath-circle">
+                        <span id="breath-text" style="font-size: 2rem; font-weight: 700; color: white;">Ready</span>
+                    </div>
+                </div>
+                <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">Inhale 4 sec → Hold 4 sec → Exhale 4
+                    sec</p>
+                <button id="breath-btn" onclick="toggleBreathing()" class="btn btn-primary">Start Breathing</button>
+            </div>
+
+            <!-- Tips -->
+            <div class="card p-6">
+                <h3 class="mb-4">🧘 Mindfulness Tips</h3>
+                <ul style="list-style: none;">
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>You are enough</strong> - Take a moment to acknowledge your feelings without judgment.
+                    </li>
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Stay Present</strong> - Focus on what you can control right now.
+                    </li>
+                    <li style="padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Release Tension</strong> - Scan your body and consciously relax tight muscles.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .breath-circle {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 1s ease-in-out, box-shadow 1s ease-in-out;
+    }
+
+    .breath-circle.inhale {
+        transform: scale(1.2);
+    }
+
+    .breath-circle.exhale {
+        transform: scale(0.8);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container">
+        <div class="text-center mb-12">
+            <h1>Emotion <span class="text-gradient">Analysis</span></h1>
+            <p style="color: var(--muted-foreground); font-size: 1.125rem;">Provide text, voice, or an image — our AI
+                will detect your emotion and stress level.</p>
+        </div>
+
+        <div style="max-width: 800px; margin: 0 auto;">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="text" onclick="switchTab('text')">
+                    <i data-lucide="type"></i> Text Input
+                </button>
+                <button class="tab-btn" data-tab="voice" onclick="switchTab('voice')">
+                    <i data-lucide="mic"></i> Voice Input
+                </button>
+                <button class="tab-btn" data-tab="image" onclick="switchTab('image')">
+                    <i data-lucide="image"></i> Image Input
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="text-tab" class="tab-content active">
+                <div class="card p-6">
+                    <label style="font-weight: 600; display: block; margin-bottom: 1rem;">How are you feeling
+                        today?</label>
+                    <textarea id="text-input"
+                        placeholder="Type your thoughts, feelings, or describe your current emotional state..." rows="5"
+                        class="input-field"></textarea>
+                    <button onclick="analyzeEmotion()" class="btn btn-primary mt-4" style="width: 100%;">Analyze
+                        Emotion</button>
+                </div>
+            </div>
+
+            <div id="voice-tab" class="tab-content">
+                <div class="card p-8 text-center">
+                    <button id="record-btn" onclick="toggleRecording()" class="record-btn">
+                        <i data-lucide="mic" class="mic-icon"></i>
+                    </button>
+                    <p id="record-status" style="margin-top: 1rem; font-weight: 600;">Click to start recording</p>
+                    <p style="color: var(--muted-foreground); font-size: 0.875rem;">Speak about how you're feeling. Your
+                        voice will be analyzed.</p>
+                </div>
+            </div>
+
+            <div id="image-tab" class="tab-content">
+                <div class="card p-6">
+                    <label style="font-weight: 600; display: block; margin-bottom: 1rem;">Upload a face image</label>
+                    <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)"
+                        class="input-field" style="padding: 0.5rem;">
+                    <div id="image-preview" style="margin-top: 1rem; display: none;">
+                        <img id="preview-img" src="" alt="Preview"
+                            style="max-width: 200px; border-radius: 1rem; border: 2px solid var(--muted);">
+                    </div>
+                    <button onclick="analyzeEmotion()" class="btn btn-primary mt-4" style="width: 100%;" disabled
+                        id="image-analyze-btn">Detect Emotion</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="analysis-loading" style="display: none; text-center; margin-top: 2rem;">
+                <i data-lucide="loader-2" class="animate-spin"
+                    style="width: 3rem; height: 3rem; color: var(--primary);"></i>
+                <p>Analyzing your emotion...</p>
+            </div>
+
+            <div id="analysis-result" style="display: none; margin-top: 2rem;" class="card p-8 animation-scale-in">
+                <h3 class="text-center mb-6">Analysis Results</h3>
+                <div class="results-grid">
+                    <div class="result-box">
+                        <span id="result-emoji" style="font-size: 3rem;"></span>
+                        <p style="color: var(--muted-foreground);">Detected Emotion</p>
+                        <p id="result-emotion" style="font-weight: 700; font-size: 1.25rem;"></p>
+                    </div>
+                    <div class="result-box">
+                        <span id="result-stress-icon" style="font-size: 3rem;"></span>
+                        <p style="color: var(--muted-foreground);">Stress Level</p>
+                        <p id="result-stress" style="font-weight: 700; font-size: 1.25rem;"></p>
+                    </div>
+                    <div class="result-box">
+                        <span style="font-size: 3rem;">📊</span>
+                        <p style="color: var(--muted-foreground);">Confidence</p>
+                        <p id="result-confidence" style="font-weight: 700; font-size: 1.25rem;"></p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                    <a href="/music" class="btn btn-primary">
+                        View Music Recommendations <i data-lucide="arrow-right"
+                            style="margin-left: 0.5rem; width: 16px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        background: var(--muted);
+        padding: 0.25rem;
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+        background: transparent;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--muted-foreground);
+        transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .card {
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .p-6 {
+        padding: 1.5rem;
+    }
+
+    .p-8 {
+        padding: 2rem;
+    }
+
+    .mt-4 {
+        margin-top: 1rem;
+    }
+
+    .input-field {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border, #e2e8f0);
+        padding: 1rem;
+        font-family: inherit;
+        resize: none;
+    }
+
+    .input-field:focus {
+        outline: 2px solid var(--primary);
+        border-color: transparent;
+    }
+
+    .record-btn {
+        width: 6rem;
+        height: 6rem;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        transition: transform 0.2s;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .record-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .record-btn.recording {
+        background: var(--destructive, #ef4444);
+        animation: pulse 1.5s infinite;
+    }
+
+    .mic-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .result-box {
+        background: var(--muted);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-center;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+</style>
+{% endblock %}

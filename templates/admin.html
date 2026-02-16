@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — MoodMusic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f5f6fa;
+            --fg: #1a1f36;
+            --card: #ffffff;
+            --border: #e2e5ef;
+            --muted: #eef0f6;
+            --muted-fg: #525a76;
+            --green: #3ecf8e;
+            --blue: #4f8df5;
+            --purple: #7c3aed;
+            --pink: #ec4899;
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --sidebar-bg: #1a1f36;
+            --sidebar-fg: #a8b0c5;
+            --sidebar-active: #ffffff;
+            --font: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--fg);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 250px;
+            background: var(--sidebar-bg);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .sidebar-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--sidebar-fg);
+            padding: 0 1.5rem;
+            margin: 1.25rem 0 0.5rem;
+            opacity: 0.6;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1.5rem;
+            color: var(--sidebar-fg);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            color: var(--sidebar-active);
+            background: rgba(255, 255, 255, 0.06);
+            border-left-color: var(--green);
+        }
+
+        .sidebar-link.active {
+            font-weight: 600;
+        }
+
+        .sidebar-spacer {
+            flex: 1;
+        }
+
+        .sidebar-link.logout {
+            color: #f87171;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+
+        .sidebar-link.logout:hover {
+            background: rgba(248, 113, 113, 0.1);
+            border-left-color: #f87171;
+        }
+
+        /* ===== MAIN ===== */
+        .main {
+            margin-left: 250px;
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Profile dropdown */
+        .profile-wrap {
+            position: relative;
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--card);
+            cursor: pointer;
+            font-family: var(--font);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--green);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .profile-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 110%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.625rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            overflow: hidden;
+            z-index: 200;
+        }
+
+        .profile-menu.open {
+            display: block;
+        }
+
+        .profile-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            text-decoration: none;
+            color: var(--fg);
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+
+        .profile-menu a:hover {
+            background: var(--muted);
+        }
+
+        .profile-menu a.danger {
+            color: var(--red);
+        }
+
+        /* ===== CONTENT ===== */
+        .content {
+            padding: 2rem;
+            max-width: 1300px;
+        }
+
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.875rem;
+            padding: 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 0.625rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-info p {
+            color: var(--muted-fg);
+            font-size: 0.8rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .stat-info h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-info span {
+            font-size: 0.75rem;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* ===== CHARTS ===== */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.875rem;
+            padding: 1.25rem;
+            max-height: 260px;
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ===== TABLE SECTION ===== */
+        .table-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.875rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg);
+            width: 280px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: var(--font);
+            font-size: 0.875rem;
+            width: 100%;
+            color: var(--fg);
+        }
+
+        .search-box input::placeholder {
+            color: var(--muted-fg);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            text-align: left;
+            padding: 0.7rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted-fg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .admin-table td {
+            padding: 0.85rem 0.75rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--muted);
+            vertical-align: middle;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .admin-table tr:hover td {
+            background: var(--muted);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-admin {
+            background: hsla(160, 60%, 45%, 0.12);
+            color: var(--green);
+        }
+
+        .badge-user {
+            background: var(--muted);
+            color: var(--muted-fg);
+        }
+
+        .badge-active {
+            background: hsla(160, 60%, 45%, 0.12);
+            color: var(--green);
+        }
+
+        .badge-disabled {
+            background: hsla(0, 60%, 50%, 0.1);
+            color: var(--red);
+        }
+
+        .action-group {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .act-btn {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            background: var(--card);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: var(--font);
+            transition: all 0.15s;
+            color: var(--fg);
+        }
+
+        .act-btn:hover {
+            background: var(--muted);
+        }
+
+        .act-btn.danger {
+            color: var(--red);
+            border-color: #fecaca;
+        }
+
+        .act-btn.danger:hover {
+            background: #fef2f2;
+        }
+
+        .act-btn.warn {
+            color: var(--orange);
+            border-color: #fde68a;
+        }
+
+        .act-btn.warn:hover {
+            background: #fffbeb;
+        }
+
+        /* ===== ACTIVITY ===== */
+        .activity-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.875rem;
+            padding: 1.5rem;
+        }
+
+        .activity-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--muted);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            min-width: 8px;
+            border-radius: 50%;
+            margin-top: 0.4rem;
+        }
+
+        .activity-text {
+            font-size: 0.875rem;
+            color: var(--fg);
+            line-height: 1.5;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--muted-fg);
+            margin-top: 0.15rem;
+        }
+
+        /* ===== LOADING / EMPTY / ERROR ===== */
+        .loading-state,
+        .empty-state,
+        .error-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--muted-fg);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--muted);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">🎵 MoodMusic</div>
+
+        <div class="sidebar-label">Navigation</div>
+        <a href="#" class="sidebar-link active" onclick="scrollToSection('stats-section', this)">
+            <i data-lucide="layout-dashboard" style="width:18px;"></i> Dashboard
+        </a>
+        <a href="#" class="sidebar-link" onclick="scrollToSection('charts-section', this)">
+            <i data-lucide="bar-chart-3" style="width:18px;"></i> Analysis
+        </a>
+        <a href="#" class="sidebar-link" onclick="scrollToSection('users-section', this)">
+            <i data-lucide="users" style="width:18px;"></i> Registered Users
+        </a>
+        <a href="#" class="sidebar-link" onclick="scrollToSection('activity-section', this)">
+            <i data-lucide="clock" style="width:18px;"></i> Recent Activity
+        </a>
+
+        <div class="sidebar-spacer"></div>
+
+        <a href="/" class="sidebar-link">
+            <i data-lucide="home" style="width:18px;"></i> Back to Site
+        </a>
+        <a href="#" class="sidebar-link logout" onclick="handleLogout()">
+            <i data-lucide="log-out" style="width:18px;"></i> Logout
+        </a>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <div class="main">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <span class="topbar-title">Admin Dashboard</span>
+
+            <div class="profile-wrap">
+                <button class="profile-btn" onclick="toggleProfile()">
+                    <div class="profile-avatar">A</div>
+                    Admin
+                    <i data-lucide="chevron-down" style="width:14px; color:var(--muted-fg);"></i>
+                </button>
+                <div class="profile-menu" id="profile-menu">
+                    <a href="#"><i data-lucide="user" style="width:16px;"></i> Profile</a>
+                    <a href="#"><i data-lucide="settings" style="width:16px;"></i> Settings</a>
+                    <a href="#" class="danger" onclick="handleLogout()"><i data-lucide="log-out"
+                            style="width:16px;"></i> Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Stat Cards -->
+            <div class="stats-grid" id="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(160,60%,45%,0.12);">
+                        <i data-lucide="users" style="width:20px; color:var(--green);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Total Users</p>
+                        <h3 id="s-total">—</h3>
+                        <span>↑ Live</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(262,60%,55%,0.12);">
+                        <i data-lucide="shield" style="width:20px; color:var(--purple);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Admins</p>
+                        <h3 id="s-admins">—</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(215,80%,55%,0.12);">
+                        <i data-lucide="user-check" style="width:20px; color:var(--blue);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Regular Users</p>
+                        <h3 id="s-users">—</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(280,60%,55%,0.12);">
+                        <i data-lucide="brain" style="width:20px; color:#a855f7;"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Total Analyses</p>
+                        <h3>125</h3>
+                        <span>↑ 12% this week</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(30,80%,55%,0.12);">
+                        <i data-lucide="activity" style="width:20px; color:var(--orange);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Stress Detections</p>
+                        <h3>87</h3>
+                        <span>↑ 8% this week</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(330,60%,55%,0.12);">
+                        <i data-lucide="headphones" style="width:20px; color:var(--pink);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Songs Recommended</p>
+                        <h3>310</h3>
+                        <span>↑ 18% this week</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: hsla(160,60%,45%,0.12);">
+                        <i data-lucide="zap" style="width:20px; color:var(--green);"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Active Today</p>
+                        <h3>5</h3>
+                        <span style="color:var(--green);">● Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row" id="charts-section">
+                <div class="chart-card">
+                    <h3>📊 Emotion Distribution</h3>
+                    <canvas id="emotionChart" height="140"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>📊 Stress Level Distribution</h3>
+                    <canvas id="stressChart" height="140"></canvas>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-section" id="users-section">
+                <div class="table-header">
+                    <h3><i data-lucide="users" style="width:18px; color:var(--green);"></i> Registered Users</h3>
+                    <div class="search-box">
+                        <i data-lucide="search" style="width:16px; color:var(--muted-fg);"></i>
+                        <input type="text" id="user-search" placeholder="Search users..." oninput="filterUsers()">
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="table-loading" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading users...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="table-error" class="error-state" style="display:none;">
+                    <div class="empty-icon">⚠️</div>
+                    <p style="font-weight:600; margin-bottom:0.25rem;">Failed to load users</p>
+                    <p style="font-size:0.85rem;">Please check your connection and try again.</p>
+                    <button onclick="loadUsers()" class="act-btn"
+                        style="margin-top:1rem; padding:0.5rem 1.25rem;">Retry</button>
+                </div>
+
+                <!-- Empty State -->
+                <div id="table-empty" class="empty-state" style="display:none;">
+                    <div class="empty-icon">👤</div>
+                    <p style="font-weight:600; margin-bottom:0.25rem;">No users found</p>
+                    <p style="font-size:0.85rem;">Try adjusting your search query.</p>
+                </div>
+
+                <!-- Table -->
+                <div style="overflow-x:auto;">
+                    <table class="admin-table" id="users-table" style="display:none;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Date Joined</th>
+                                <th>Last Login</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-section" id="activity-section">
+                <h3><i data-lucide="clock" style="width:18px; color:var(--green);"></i> Recent Activity</h3>
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:var(--blue);"></div>
+                    <div>
+                        <div class="activity-text"><strong>User Lakshmi</strong> performed emotion analysis (Text Input)
+                        </div>
+                        <div class="activity-time">2 minutes ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:var(--green);"></div>
+                    <div>
+                        <div class="activity-text"><strong>User Ravi</strong> logged in successfully</div>
+                        <div class="activity-time">15 minutes ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:var(--purple);"></div>
+                    <div>
+                        <div class="activity-text"><strong>Admin</strong> updated music playlist for "Happy" emotion
+                        </div>
+                        <div class="activity-time">1 hour ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:var(--orange);"></div>
+                    <div>
+                        <div class="activity-text"><strong>User Priya</strong> uploaded a face image for analysis</div>
+                        <div class="activity-time">3 hours ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:var(--pink);"></div>
+                    <div>
+                        <div class="activity-text"><strong>System</strong> detected high stress for user and recommended
+                            relaxation tips</div>
+                        <div class="activity-time">5 hours ago</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ===== Init Lucide Icons =====
+        lucide.createIcons();
+
+        // ===== Profile Dropdown =====
+        function toggleProfile() {
+            document.getElementById('profile-menu').classList.toggle('open');
+        }
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.profile-wrap')) {
+                document.getElementById('profile-menu').classList.remove('open');
+            }
+        });
+
+        // ===== Sidebar Navigation =====
+        const allSections = ['stats-section', 'charts-section', 'users-section', 'activity-section'];
+
+        function scrollToSection(sectionId, clickedLink) {
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            clickedLink.classList.add('active');
+
+            if (sectionId === 'stats-section') {
+                // Dashboard = show everything
+                allSections.forEach(id => {
+                    document.getElementById(id).style.display = '';
+                });
+            } else {
+                // Show only the clicked section
+                allSections.forEach(id => {
+                    document.getElementById(id).style.display = (id === sectionId) ? '' : 'none';
+                });
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ===== Logout =====
+        function handleLogout() {
+            fetch('/api/logout', { method: 'POST' }).then(() => { window.location.href = '/login'; });
+        }
+
+        // ===== Load Users =====
+        let allUsers = [];
+
+        async function loadUsers() {
+            const loading = document.getElementById('table-loading');
+            const errorEl = document.getElementById('table-error');
+            const emptyEl = document.getElementById('table-empty');
+            const table = document.getElementById('users-table');
+
+            loading.style.display = 'block';
+            errorEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+            table.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/admin/users');
+                if (res.status === 403) { window.location.href = '/login'; return; }
+                const data = await res.json();
+                allUsers = data.users;
+                updateStats();
+                renderUsers(allUsers);
+            } catch (e) {
+                loading.style.display = 'none';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function updateStats() {
+            const admins = allUsers.filter(u => u.role === 'admin').length;
+            document.getElementById('s-total').textContent = allUsers.length;
+            document.getElementById('s-admins').textContent = admins;
+            document.getElementById('s-users').textContent = allUsers.length - admins;
+        }
+
+        const dummyDates = ['2026-01-15', '2026-01-28', '2026-02-03', '2026-02-08', '2026-02-11'];
+        const dummyLogins = ['Today', 'Yesterday', '2 days ago', '5 days ago', '1 week ago'];
+
+        function renderUsers(users) {
+            const loading = document.getElementById('table-loading');
+            const emptyEl = document.getElementById('table-empty');
+            const table = document.getElementById('users-table');
+            const tbody = document.getElementById('users-tbody');
+
+            loading.style.display = 'none';
+
+            if (users.length === 0) {
+                emptyEl.style.display = 'block';
+                table.style.display = 'none';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            table.style.display = 'table';
+            tbody.innerHTML = '';
+
+            users.forEach((user, i) => {
+                const isDefault = user.email === 'admin@moodmusic.com';
+                const roleClass = user.role === 'admin' ? 'badge-admin' : 'badge-user';
+                const joined = dummyDates[i % dummyDates.length];
+                const lastLogin = dummyLogins[i % dummyLogins.length];
+                const status = isDefault ? 'active' : (i % 5 === 3 ? 'disabled' : 'active');
+                const statusClass = status === 'active' ? 'badge-active' : 'badge-disabled';
+                const toggleLabel = user.role === 'admin' ? 'Demote' : 'Promote';
+
+                let actions = '';
+                if (!isDefault) {
+                    actions = `
+                <button class="act-btn" onclick="toggleRole('${user.email}', '${user.role === 'admin' ? 'user' : 'admin'}')" title="${toggleLabel}">${toggleLabel}</button>
+                <button class="act-btn warn" onclick="alert('Disable feature coming soon')" title="Disable">Disable</button>
+                <button class="act-btn danger" onclick="deleteUser('${user.email}')" title="Delete">Delete</button>
+            `;
+                } else {
+                    actions = '<span style="color:var(--muted-fg); font-size:0.75rem;">Protected</span>';
+                }
+
+                tbody.innerHTML += `
+            <tr>
+                <td style="font-weight:600; color:var(--muted-fg);">${i + 1}</td>
+                <td style="font-weight:600;">${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge ${roleClass}">${user.role}</span></td>
+                <td><span class="badge ${statusClass}">${status}</span></td>
+                <td style="color:var(--muted-fg); font-size:0.8rem;">${joined}</td>
+                <td style="color:var(--muted-fg); font-size:0.8rem;">${lastLogin}</td>
+                <td style="text-align:right;"><div class="action-group" style="justify-content:flex-end;">${actions}</div></td>
+            </tr>
+        `;
+            });
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('user-search').value.toLowerCase();
+            const filtered = allUsers.filter(u =>
+                u.name.toLowerCase().includes(query) ||
+                u.email.toLowerCase().includes(query) ||
+                u.role.toLowerCase().includes(query)
+            );
+            renderUsers(filtered);
+        }
+
+        async function toggleRole(email, newRole) {
+            if (!confirm(`Change role to "${newRole}"?`)) return;
+            await fetch('/api/admin/users/role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, role: newRole })
+            });
+            loadUsers();
+        }
+
+        async function deleteUser(email) {
+            if (!confirm('Delete this user permanently?')) return;
+            await fetch('/api/admin/users/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            loadUsers();
+        }
+
+        // ===== Charts =====
+        function initCharts() {
+            // Emotion Distribution — Bar Chart
+            new Chart(document.getElementById('emotionChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Happy', 'Sad', 'Angry', 'Neutral'],
+                    datasets: [{
+                        label: 'Detections',
+                        data: [40, 25, 20, 15],
+                        backgroundColor: ['#3ecf8e', '#4f8df5', '#ef4444', '#a8b0c5'],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#eef0f6' }, ticks: { font: { size: 12 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 12 } } }
+                    }
+                }
+            });
+
+            // Stress Level — Pie Chart
+            new Chart(document.getElementById('stressChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low', 'Medium', 'High'],
+                    datasets: [{
+                        data: [30, 35, 15],
+                        backgroundColor: ['#3ecf8e', '#f59e0b', '#ef4444'],
+                        borderWidth: 0,
+                        spacing: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ===== Init =====
+        loadUsers();
+        initCharts();
+    </script>
+
+</body>
+
+</html>

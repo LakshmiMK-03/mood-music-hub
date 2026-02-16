@@ -5,8 +5,10 @@
     <div class="container">
         <div class="text-center mb-12">
             <h1>Emotion <span class="text-gradient">Analysis</span></h1>
-            <p style="color: var(--muted-foreground); font-size: 1.125rem;">Provide text, voice, or an image — our AI
-                will detect your emotion and stress level.</p>
+            <p style="color: var(--muted-foreground); font-size: 1.125rem; max-width: 700px; margin: 0 auto;">
+                Enter text, upload voice, or provide an image. Our system uses NLP, Machine Learning & Computer Vision
+                to detect your emotional state and stress level.
+            </p>
         </div>
 
         <div style="max-width: 800px; margin: 0 auto;">
@@ -26,8 +28,14 @@
             <!-- Tab Content -->
             <div id="text-tab" class="tab-content active">
                 <div class="card p-6">
-                    <label style="font-weight: 600; display: block; margin-bottom: 1rem;">How are you feeling
+                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">How are you feeling
                         today?</label>
+                    <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
+                        Your text will be processed using <strong>Tokenization</strong>, <strong>Stop-word
+                            Removal</strong>,
+                        <strong>Lowercasing</strong>, and <strong>TF-IDF Feature Extraction</strong>, then classified by
+                        ML algorithms.
+                    </p>
                     <textarea id="text-input"
                         placeholder="Type your thoughts, feelings, or describe your current emotional state..." rows="5"
                         class="input-field"></textarea>
@@ -42,14 +50,20 @@
                         <i data-lucide="mic" class="mic-icon"></i>
                     </button>
                     <p id="record-status" style="margin-top: 1rem; font-weight: 600;">Click to start recording</p>
-                    <p style="color: var(--muted-foreground); font-size: 0.875rem;">Speak about how you're feeling. Your
-                        voice will be analyzed.</p>
+                    <p style="color: var(--muted-foreground); font-size: 0.875rem;">
+                        Your voice will be converted to text using <strong>Speech-to-Text</strong> technology and
+                        analyzed using the same NLP + ML pipeline.
+                    </p>
                 </div>
             </div>
 
             <div id="image-tab" class="tab-content">
                 <div class="card p-6">
-                    <label style="font-weight: 600; display: block; margin-bottom: 1rem;">Upload a face image</label>
+                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Upload a face image</label>
+                    <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
+                        Image is processed using <strong>OpenCV</strong> for face detection and a <strong>Convolutional
+                            Neural Network (CNN)</strong> model for facial emotion recognition.
+                    </p>
                     <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)"
                         class="input-field" style="padding: 0.5rem;">
                     <div id="image-preview" style="margin-top: 1rem; display: none;">
@@ -62,7 +76,7 @@
             </div>
 
             <!-- Results -->
-            <div id="analysis-loading" style="display: none; text-center; margin-top: 2rem;">
+            <div id="analysis-loading" style="display: none; text-align: center; margin-top: 2rem;">
                 <i data-lucide="loader-2" class="animate-spin"
                     style="width: 3rem; height: 3rem; color: var(--primary);"></i>
                 <p>Analyzing your emotion...</p>
@@ -88,16 +102,137 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
-                    <a href="/music" class="btn btn-primary">
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
+                    <button onclick="showLanguageModal()" class="btn btn-primary">
                         View Music Recommendations <i data-lucide="arrow-right"
                             style="margin-left: 0.5rem; width: 16px;"></i>
+                    </button>
+                    <a href="/relaxation" class="btn btn-outline">
+                        Relaxation Tips <i data-lucide="heart" style="margin-left: 0.5rem; width: 16px;"></i>
                     </a>
                 </div>
             </div>
         </div>
     </div>
+    <!-- Language Selection Modal -->
+    <div id="language-modal" class="modal">
+        <div class="modal-content card p-8">
+            <h3 class="mb-4 text-center">Select Music Languages</h3>
+            <p class="text-center mb-6" style="color: var(--muted-foreground);">
+                Choose up to 2 languages for your recommendations.
+            </p>
+
+            <div class="language-grid mb-6">
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Hindi" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Hindi</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="English" onchange="handleLangSelection(this)">
+                    <span class="lang-label">English</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Spanish" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Spanish</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Tamil" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Tamil</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Telugu" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Telugu</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Punjabi" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Punjabi</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Korean" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Korean (K-Pop)</span>
+                </label>
+                <label class="lang-option">
+                    <input type="checkbox" name="language" value="Instrumental" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Instrumental</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button onclick="closeLanguageModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                <button onclick="submitLanguages()" class="btn btn-primary" style="flex: 1;">Get Music</button>
+            </div>
+        </div>
+    </div>
+    </div>
 </section>
+
+<style>
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        max-width: 500px;
+        width: 90%;
+        animation: scaleIn 0.3s ease-out;
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .language-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .lang-option input {
+        display: none;
+    }
+
+    .lang-label {
+        display: block;
+        padding: 0.75rem;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 0.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .lang-option input:checked+.lang-label {
+        background: var(--primary-light, #eff6ff);
+        border-color: var(--primary);
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .lang-option input:disabled+.lang-label {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
 
 <style>
     .tabs {
@@ -211,7 +346,7 @@
         background: var(--muted);
         padding: 1.5rem;
         border-radius: 1rem;
-        text-center;
+        text-align: center;
     }
 
     @keyframes pulse {

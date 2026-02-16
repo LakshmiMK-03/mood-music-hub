@@ -1,2 +1,7 @@
-Flask
+flask
 flask-cors
+scikit-learn
+numpy
+opencv-python
+google-api-python-client
+python-dotenv

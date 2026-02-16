@@ -2,62 +2,107 @@
 
 {% block content %}
 <section class="hero">
+    <!-- Glass Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
     <div class="container hero-content">
-        <div
-            style="margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.5); border-radius: 999px; border: 1px solid rgba(0,0,0,0.05);">
-            <i data-lucide="brain" style="color: var(--primary); width: 16px;"></i>
-            <span style="font-size: 0.875rem; color: var(--primary); font-weight: 500;">AI-Powered Wellness</span>
-        </div>
+        <h1>Emotion & Stress Aware<br><span class="text-gradient">Music Recommendation</span></h1>
 
-        <h1>Music That Understands <br><span class="text-gradient">Your Emotions</span></h1>
-
-        <p>Detect emotions & stress → Get personalized music → Relax. Powered by NLP, Machine Learning & Computer
-            Vision.</p>
+        <p>A web-based application that detects emotions and stress levels through
+            text, voice, and image input — and provides personalized music
+            recommendations and relaxation tips.</p>
 
         <div class="hero-actions">
-            <a href="/analyze" class="btn btn-primary">
+            <a href="/register" class="btn btn-primary">
+                <i data-lucide="activity" style="margin-right: 0.5rem; width: 18px;"></i>
                 Start Emotion Analysis
-                <i data-lucide="arrow-right" style="margin-left: 0.5rem; width: 20px;"></i>
             </a>
-            <a href="/about" class="btn btn-outline">Learn More</a>
-        </div>
-
-        <!-- Decorative Elements -->
-        <div style="display: flex; gap: 3rem; justify-content: center; margin-top: 4rem;">
-            <div class="animate-float" style="animation-delay: 0s;">
-                <div
-                    style="width: 4rem; height: 4rem; background: var(--gradient-primary); border-radius: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-glow);">
-                    <i data-lucide="music" style="color: white;"></i>
-                </div>
-            </div>
-            <div class="animate-float" style="animation-delay: 1s;">
-                <div
-                    style="width: 4rem; height: 4rem; background: var(--secondary); border-radius: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <i data-lucide="brain" style="color: white;"></i>
-                </div>
-            </div>
-            <div class="animate-float" style="animation-delay: 2s;">
-                <div
-                    style="width: 4rem; height: 4rem; background: var(--accent); border-radius: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <i data-lucide="heart" style="color: white;"></i>
-                </div>
-            </div>
+            <a href="/about" class="btn btn-outline">
+                <i data-lucide="download" style="margin-right: 0.5rem; width: 18px;"></i>
+                Learn More
+            </a>
         </div>
     </div>
 </section>
 
+<!-- Abstract / Project Overview -->
 <section class="py-20">
     <div class="container text-center">
-        <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 2rem;">
-            Project <span class="text-gradient">Overview</span>
+        <h2 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 2rem;">
+            Project <span class="text-gradient">Abstract</span>
         </h2>
         <p
-            style="max-width: 800px; margin: 0 auto; color: var(--muted-foreground); font-size: 1.125rem; line-height: 1.7;">
-            In today's fast-paced world, stress and emotional imbalance are growing concerns. Our system uses
-            <strong style="color: var(--foreground);">NLP, Machine Learning, and Computer Vision</strong> to detect
-            emotions from text, voice, and facial expressions,
-            then recommends personalized music and wellness activities to help users manage stress effectively.
+            style="max-width: 800px; margin: 0 auto 3rem; color: var(--muted-foreground); font-size: 1.05rem; line-height: 1.8;">
+            In today's fast-paced world, stress and emotional imbalance are growing concerns.
+            Many individuals are unable to openly express their emotions, which may lead to anxiety, depression, and
+            reduced productivity.
+            Music has proven to be an effective tool for emotional regulation and stress reduction.
+            This system is a <strong style="color: var(--foreground);">web-based application</strong> designed to detect
+            user emotions and stress levels and provide
+            <strong style="color: var(--foreground);">personalized music recommendations</strong> along with <strong
+                style="color: var(--foreground);">relaxation tips</strong>.
         </p>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section style="padding: 3rem 0 5rem; background: #ffffff;">
+    <div class="container">
+        <h2 class="text-center" style="font-size: 2rem; font-weight: 700; margin-bottom: 3rem;">
+            How It <span class="text-gradient">Works</span>
+        </h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="type" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Text Input</h3>
+                <p>Text is processed using NLP techniques — Tokenization, Stop-word Removal, Lowercasing, and TF-IDF
+                    Feature Extraction — then classified using ML algorithms.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: var(--secondary);">
+                    <i data-lucide="mic" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Voice Input</h3>
+                <p>Voice input is converted into text using Speech-to-Text technology and then analyzed using the same
+                    NLP + ML pipeline for emotion classification.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #e8b4c8;">
+                    <i data-lucide="camera" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Image Input</h3>
+                <p>Image input is processed using OpenCV for face detection and a Convolutional Neural Network (CNN)
+                    model for facial emotion recognition.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #f59e0b;">
+                    <i data-lucide="bar-chart-3" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Emotion & Stress Detection</h3>
+                <p>ML classification detects emotions — Happy, Sad, Angry, Neutral — and predicts stress levels as Low,
+                    Medium, or High.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #2a9d8f;">
+                    <i data-lucide="headphones" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Music Recommendation</h3>
+                <p>Based on detected emotional state, the system maps results to predefined music playlists for
+                    emotional regulation and stress relief.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #7c3aed;">
+                    <i data-lucide="sparkles" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Relaxation Tips</h3>
+                <p>When medium or high stress is detected, the system provides breathing exercises, mindfulness
+                    suggestions, and break reminders.</p>
+            </div>
+        </div>
     </div>
 </section>
 {% endblock %}

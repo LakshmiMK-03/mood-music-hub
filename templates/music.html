@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container">
+        <div class="text-center mb-12">
+            <h1>Music <span class="text-gradient">Recommendations</span></h1>
+            <p style="color: var(--muted-foreground); max-width: 700px; margin: 0 auto;">
+                Based on detected emotions (Happy, Sad, Angry, Neutral), the system maps results to predefined music
+                playlists for emotional regulation and stress relief.
+            </p>
+        </div>
+
+        <div class="emotions-grid mb-10">
+            <button onclick="selectEmotion('Happy')" class="emotion-btn active" data-emotion="Happy">😊 Happy</button>
+            <button onclick="selectEmotion('Sad')" class="emotion-btn" data-emotion="Sad">😟 Sad</button>
+            <button onclick="selectEmotion('Angry')" class="emotion-btn" data-emotion="Angry">😤 Angry</button>
+            <button onclick="selectEmotion('Neutral')" class="emotion-btn" data-emotion="Neutral">😐 Neutral</button>
+            <button onclick="selectEmotion('Fearful')" class="emotion-btn" data-emotion="Fearful">😨 Fearful</button>
+        </div>
+
+        <div class="music-layout">
+            <!-- Playlist -->
+            <div class="card overflow-hidden">
+                <div class="playlist-header">
+                    <h3 id="playlist-title" style="color: white; margin-bottom: 0.25rem;">Playlist Name</h3>
+                    <span id="current-emotion-badge" class="badge">Emotion: Happy</span>
+                </div>
+                <div id="playlist-tracks" class="tracks-list">
+                    <!-- Tracks injected via JS -->
+                </div>
+            </div>
+
+            <!-- Player -->
+            <div class="card p-6">
+                <h3 class="mb-4">🎧 Now Playing</h3>
+                <div class="text-center" id="player-container">
+                    <div class="album-art" id="default-art">
+                        <i data-lucide="music" style="color: white; width: 3rem; height: 3rem;"></i>
+                    </div>
+                    <div id="youtube-embed-wrapper"
+                        style="display: none; width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem; border-radius: 1rem; overflow: hidden;">
+                        <!-- Iframe will be injected here -->
+                    </div>
+                    <h4 id="player-title" style="margin-bottom: 0.25rem;">Select a track</h4>
+                    <p id="player-artist" style="color: var(--muted-foreground); font-size: 0.875rem;">from the list</p>
+                </div>
+
+                <div class="controls mt-4">
+                    <div class="controls mt-4">
+                        <button id="btn-prev" class="control-btn" onclick="playPrevious()"><i
+                                data-lucide="skip-back"></i></button>
+                        <button id="btn-play" class="play-btn" onclick="togglePlay()"><i data-lucide="play"
+                                id="play-icon"></i></button>
+                        <button id="btn-next" class="control-btn" onclick="playNext()"><i
+                                data-lucide="skip-forward"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How Mapping Works -->
+        <div class="card p-8 mt-8" style="max-width: 1000px; margin-left: auto; margin-right: auto;">
+            <h3 class="mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="info" style="color: var(--primary); width: 20px;"></i>
+                How Emotion-to-Music Mapping Works
+            </h3>
+            <p style="color: var(--muted-foreground); line-height: 1.7;">
+                After the system detects the user's emotional state using NLP, ML, or Computer Vision techniques,
+                it maps the classified emotion to a <strong>predefined music playlist</strong>. For example,
+                if a user is detected as <em>Sad</em>, calm and peaceful tracks are recommended to soothe the mood.
+                If <em>Happy</em>, energetic and upbeat music is suggested to match the positive vibe.
+                This intelligent mapping uses psychological research on music therapy to promote emotional regulation.
+            </p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .emotions-grid {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .emotion-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 999px;
+        border: none;
+        background: var(--muted);
+        color: var(--muted-foreground);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .emotion-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .music-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+        .music-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .playlist-header {
+        background: var(--gradient-primary);
+        padding: 1.5rem;
+    }
+
+    .badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+    }
+
+    .tracks-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .track-item {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--muted);
+        background: none;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .track-item:hover {
+        background: var(--muted);
+    }
+
+    .album-art {
+        width: 8rem;
+        height: 8rem;
+        border-radius: 1rem;
+        background: var(--gradient-primary);
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .control-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+    }
+
+    .play-btn {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .play-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .mt-8 {
+        margin-top: 2rem;
+    }
+
+    .card {
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .p-6 {
+        padding: 1.5rem;
+    }
+
+    .p-8 {
+        padding: 2rem;
+    }
+
+    .mb-4 {
+        margin-bottom: 1rem;
+    }
+
+    .mt-4 {
+        margin-top: 1rem;
+    }
+
+    .mb-10 {
+        margin-bottom: 2.5rem;
+    }
+
+    .overflow-hidden {
+        overflow: hidden;
+    }
+</style>
+<script src="https://www.youtube.com/iframe_api"></script>
+{% endblock %}

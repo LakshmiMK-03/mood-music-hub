@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container">
+        <div class="text-center mb-12">
+            <h1>Relaxation & <span class="text-gradient">Stress Management</span></h1>
+            <p style="color: var(--muted-foreground); max-width: 700px; margin: 0 auto;">
+                When medium or high stress levels are detected, the system provides breathing exercises, mindfulness
+                suggestions, and break reminders to help manage stress effectively.
+            </p>
+        </div>
+
+        <div style="max-width: 800px; margin: 0 auto; display: grid; gap: 2rem;">
+            <!-- Breathing -->
+            <div class="card p-8 text-center">
+                <h3>🌬 Breathing Exercise</h3>
+                <p style="color: var(--muted-foreground); font-size: 0.875rem; margin-top: 0.5rem;">
+                    Deep breathing activates the parasympathetic nervous system, reducing cortisol and promoting calm.
+                </p>
+                <div style="margin: 2rem 0;">
+                    <div id="breath-circle" class="breath-circle">
+                        <span id="breath-text" style="font-size: 2rem; font-weight: 700; color: white;">Ready</span>
+                    </div>
+                </div>
+                <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">Inhale 4 sec → Hold 4 sec → Exhale 4
+                    sec</p>
+                <button id="breath-btn" onclick="toggleBreathing()" class="btn btn-primary">Start Breathing</button>
+            </div>
+
+            <!-- Mindfulness Tips -->
+            <div class="card p-6">
+                <h3 class="mb-4">🧘 Mindfulness Suggestions</h3>
+                <ul style="list-style: none;">
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Acknowledge Your Feelings</strong> — Take a moment to recognize your emotions without
+                        judgment. Self-awareness is the first step toward emotional balance.
+                    </li>
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Stay Present</strong> — Focus on what you can control right now. Mindfulness reduces
+                        anxiety by anchoring you in the present moment.
+                    </li>
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Progressive Muscle Relaxation</strong> — Scan your body from head to toe and consciously
+                        relax tight muscles to release physical tension.
+                    </li>
+                    <li style="padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Guided Visualization</strong> — Close your eyes and imagine a peaceful scene — a quiet
+                        beach, a green forest, or a calm sunset — to activate relaxation responses.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Break Reminders -->
+            <div class="card p-6">
+                <h3 class="mb-4">⏰ Break Reminders</h3>
+                <ul style="list-style: none;">
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>20-20-20 Rule</strong> — Every 20 minutes, look at something 20 feet away for 20 seconds
+                        to reduce eye strain.
+                    </li>
+                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Stretch Break</strong> — Stand up every 30–45 minutes and stretch for 2–3 minutes.
+                        Movement increases blood flow and reduces fatigue.
+                    </li>
+                    <li style="padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
+                        <strong>Hydration Check</strong> — Drink water regularly. Dehydration can increase cortisol
+                        (stress hormone) levels.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Stress Level Info -->
+            <div class="card p-6">
+                <h3 class="mb-4">📊 Understanding Stress Levels</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1.5rem; background: #dcfce7; border-radius: 0.75rem; text-align: center;">
+                        <span style="font-size: 2rem;">🟢</span>
+                        <h4 style="margin: 0.5rem 0 0.25rem;">Low Stress</h4>
+                        <p style="font-size: 0.875rem; color: #166534;">You're doing well! Enjoy some upbeat music to
+                            maintain your positive mood.</p>
+                    </div>
+                    <div style="padding: 1.5rem; background: #fef9c3; border-radius: 0.75rem; text-align: center;">
+                        <span style="font-size: 2rem;">🟡</span>
+                        <h4 style="margin: 0.5rem 0 0.25rem;">Medium Stress</h4>
+                        <p style="font-size: 0.875rem; color: #854d0e;">Consider a short break. Try the breathing
+                            exercise above and listen to calming music.</p>
+                    </div>
+                    <div style="padding: 1.5rem; background: #fee2e2; border-radius: 0.75rem; text-align: center;">
+                        <span style="font-size: 2rem;">🔴</span>
+                        <h4 style="margin: 0.5rem 0 0.25rem;">High Stress</h4>
+                        <p style="font-size: 0.875rem; color: #991b1b;">Take immediate action. Use the mindfulness tips,
+                            breathing exercise, and listen to soothing music.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .breath-circle {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 1s ease-in-out, box-shadow 1s ease-in-out;
+    }
+
+    .breath-circle.inhale {
+        transform: scale(1.2);
+    }
+
+    .breath-circle.exhale {
+        transform: scale(0.8);
+    }
+
+    .card {
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .p-6 {
+        padding: 1.5rem;
+    }
+
+    .p-8 {
+        padding: 2rem;
+    }
+
+    .mb-4 {
+        margin-bottom: 1rem;
+    }
+
+    .mb-12 {
+        margin-bottom: 3rem;
+    }
+</style>
+{% endblock %}

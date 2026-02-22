@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <!-- Glass Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container hero-content">
+        <h1>Emotion & Stress Aware<br><span class="text-gradient">Music Recommendation</span></h1>
+
+        <p>A web-based application that detects emotions and stress levels through
+            text, voice, and image input — and provides personalized music
+            recommendations and relaxation tips.</p>
+
+        <div class="hero-actions">
+            <a href="/register" class="btn btn-primary">
+                <i data-lucide="activity" style="margin-right: 0.5rem; width: 18px;"></i>
+                Start Emotion Analysis
+            </a>
+            <a href="/about" class="btn btn-outline">
+                <i data-lucide="download" style="margin-right: 0.5rem; width: 18px;"></i>
+                Learn More
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Abstract / Project Overview -->
+<section class="py-20">
+    <div class="container text-center">
+        <h2 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 2rem;">
+            Project <span class="text-gradient">Abstract</span>
+        </h2>
+        <p
+            style="max-width: 800px; margin: 0 auto 3rem; color: var(--muted-foreground); font-size: 1.05rem; line-height: 1.8;">
+            In today's fast-paced world, stress and emotional imbalance are growing concerns.
+            Many individuals are unable to openly express their emotions, which may lead to anxiety, depression, and
+            reduced productivity.
+            Music has proven to be an effective tool for emotional regulation and stress reduction.
+            This system is a <strong style="color: var(--foreground);">web-based application</strong> designed to detect
+            user emotions and stress levels and provide
+            <strong style="color: var(--foreground);">personalized music recommendations</strong> along with <strong
+                style="color: var(--foreground);">relaxation tips</strong>.
+        </p>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section style="padding: 3rem 0 5rem; background: #ffffff;">
+    <div class="container">
+        <h2 class="text-center" style="font-size: 2rem; font-weight: 700; margin-bottom: 3rem;">
+            How It <span class="text-gradient">Works</span>
+        </h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="type" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Text Input</h3>
+                <p>Text is processed using NLP techniques — Tokenization, Stop-word Removal, Lowercasing, and TF-IDF
+                    Feature Extraction — then classified using ML algorithms.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: var(--secondary);">
+                    <i data-lucide="mic" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Voice Input</h3>
+                <p>Voice input is converted into text using Speech-to-Text technology and then analyzed using the same
+                    NLP + ML pipeline for emotion classification.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #e8b4c8;">
+                    <i data-lucide="camera" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Image Input</h3>
+                <p>Image input is processed using OpenCV for face detection and a Convolutional Neural Network (CNN)
+                    model for facial emotion recognition.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #f59e0b;">
+                    <i data-lucide="bar-chart-3" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Emotion & Stress Detection</h3>
+                <p>ML classification detects emotions — Happy, Sad, Angry, Neutral — and predicts stress levels as Low,
+                    Medium, or High.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #2a9d8f;">
+                    <i data-lucide="headphones" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Music Recommendation</h3>
+                <p>Based on detected emotional state, the system maps results to predefined music playlists for
+                    emotional regulation and stress relief.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #7c3aed;">
+                    <i data-lucide="sparkles" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Relaxation Tips</h3>
+                <p>When medium or high stress is detected, the system provides breathing exercises, mindfulness
+                    suggestions, and break reminders.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

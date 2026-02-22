@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-20">
+    <div class="container text-center">
+        <h1 style="margin-bottom: 0.5rem;">Contact & <span class="text-gradient">Feedback</span></h1>
+        <p
+            style="color: var(--muted-foreground); margin-bottom: 3rem; max-width: 560px; margin-left: auto; margin-right: auto;">
+            Share your thoughts, feedback, or questions about the Emotion and Stress Aware Music Recommendation System.
+        </p>
+
+        <div class="card p-8" style="max-width: 600px; margin: 0 auto;">
+            <div id="contact-form-wrapper">
+                <form id="contact-form" onsubmit="handleContactSubmit(event)">
+                    <div style="margin-bottom: 1.5rem; text-align: left;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            <i data-lucide="user" style="width: 16px; color: var(--secondary);"></i> Name
+                        </label>
+                        <input type="text" class="contact-input" placeholder="Your full name" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem; text-align: left;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            <i data-lucide="mail" style="width: 16px; color: var(--secondary);"></i> Email
+                        </label>
+                        <input type="email" class="contact-input" placeholder="your@email.com" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem; text-align: left;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            <i data-lucide="message-square" style="width: 16px; color: var(--secondary);"></i> Feedback
+                            / Message
+                        </label>
+                        <textarea class="contact-input" rows="5" placeholder="Share your thoughts..." required
+                            style="resize: none;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; gap: 0.5rem;">
+                        <i data-lucide="send" style="width: 18px;"></i> Submit Feedback
+                    </button>
+                </form>
+            </div>
+            <div id="contact-success" style="display: none; padding: 3rem 1rem; text-align: center;">
+                <div
+                    style="width: 4rem; height: 4rem; background: hsla(150, 60%, 90%, 1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                    <i data-lucide="check-circle" style="width: 2rem; height: 2rem; color: var(--secondary);"></i>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Thank You!</h2>
+                <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">Your feedback has been received.</p>
+                <button onclick="resetContactForm()" class="btn btn-outline">Send Another</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .contact-input {
+        width: 100%;
+        border-radius: 0.625rem;
+        border: 1.5px solid var(--border);
+        padding: 0.85rem 1rem;
+        font-family: inherit;
+        font-size: 1rem;
+        background: var(--background);
+        color: var(--foreground);
+    }
+
+    .contact-input:focus {
+        outline: none;
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 3px hsla(160, 50%, 50%, 0.12);
+    }
+</style>
+
+<script>
+    function handleContactSubmit(e) {
+        e.preventDefault();
+        document.getElementById('contact-form-wrapper').style.display = 'none';
+        document.getElementById('contact-success').style.display = 'block';
+        if (window.lucide) lucide.createIcons();
+    }
+    function resetContactForm() {
+        document.getElementById('contact-form').reset();
+        document.getElementById('contact-form-wrapper').style.display = 'block';
+        document.getElementById('contact-success').style.display = 'none';
+    }
+</script>
+{% endblock %}

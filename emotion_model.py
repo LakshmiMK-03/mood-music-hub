@@ -1,278 +1,223 @@
 """
 Emotion Detection Module
-Uses TF-IDF + Scikit-learn for text-based emotion classification.
-Uses OpenCV + a simple model for facial emotion recognition.
+Uses Ensemble (Logistic Regression + Naive Bayes) + VADER for improved accuracy.
 """
 
 import os
 import pickle
 import numpy as np
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 # Paths to saved models
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models')
-TEXT_MODEL_PATH = os.path.join(MODEL_DIR, 'text_emotion_model.pkl')
+LR_MODEL_PATH = os.path.join(MODEL_DIR, 'lr_emotion_model.pkl')
+NB_MODEL_PATH = os.path.join(MODEL_DIR, 'nb_emotion_model.pkl')
 TFIDF_PATH = os.path.join(MODEL_DIR, 'tfidf_vectorizer.pkl')
+
+analyzer = SentimentIntensityAnalyzer()
 
 # Emotion labels
 EMOTIONS = ['Happy', 'Sad', 'Angry', 'Neutral', 'Fearful']
 
-# Stress keywords mapping
-STRESS_HIGH_KEYWORDS = [
-    'overwhelmed', 'panic', 'can\'t cope', 'breaking down', 'hopeless',
-    'exhausted', 'desperate', 'terrified', 'crisis', 'burnout',
-    'suicidal', 'depressed', 'anxious', 'unbearable', 'suffering',
-    'miserable', 'devastated', 'furious', 'rage', 'breaking point'
-]
-
-STRESS_MEDIUM_KEYWORDS = [
-    'stressed', 'worried', 'nervous', 'tense', 'pressure',
-    'frustrated', 'annoyed', 'upset', 'uncertain', 'confused',
-    'tired', 'restless', 'uneasy', 'struggle', 'difficult',
-    'bothered', 'irritated', 'unhappy', 'concerned', 'anxious'
-]
-
-STRESS_LOW_KEYWORDS = [
-    'happy', 'relaxed', 'calm', 'peaceful', 'content',
-    'joyful', 'grateful', 'excited', 'wonderful', 'great',
-    'fine', 'good', 'okay', 'well', 'comfortable',
-    'cheerful', 'optimistic', 'hopeful', 'confident', 'relieved'
-]
-
+# Stress keywords for adjustment
+STRESS_HIGH_KEYWORDS = ['overwhelmed', 'panic', 'can\'t cope', 'hopeless', 'exhausted', 'suicidal', 'rage']
+STRESS_LOW_KEYWORDS = ['happy', 'relaxed', 'calm', 'peaceful', 'content', 'grateful']
 
 def preprocess_text(text):
-    """
-    NLP preprocessing pipeline:
-    1. Lowercasing
-    2. Tokenization
-    3. Stop-word removal
-    """
+    """NLP preprocessing: lowercase, remove special chars, and normalize elongated words."""
     import re
-
-    # Step 1: Lowercasing
+    if not isinstance(text, str): return ""
     text = text.lower()
-
-    # Step 2: Remove special characters (keep only letters and spaces)
+    
+    # Normalize elongated words (e.g., "happyyyyy" -> "happy")
+    # First, handle common cases like "ooo" -> "oo" (good -> good) but "yyyy" -> "y"
+    # A safe way is to reduce any 3+ repeated chars to 1 or 2.
+    # We'll use 1 for the keyword check and 2 for the ML model (to keep "good", "happy")
+    text = re.sub(r'(.)\1{2,}', r'\1\1', text) 
+    
     text = re.sub(r'[^a-zA-Z\s]', '', text)
-
-    # Step 3: Tokenization
     tokens = text.split()
-
-    # Step 4: Stop-word removal (common English stop words)
-    stop_words = {
-        'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves',
-        'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him',
-        'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its',
-        'itself', 'they', 'them', 'their', 'theirs', 'themselves',
-        'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those',
-        'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-        'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing',
-        'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as',
-        'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about',
-        'against', 'between', 'through', 'during', 'before', 'after',
-        'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out',
-        'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once'
-    }
+    stop_words = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves'}
     tokens = [t for t in tokens if t not in stop_words]
-
     return ' '.join(tokens)
 
+def get_vader_stress(text):
+    """Calculate stress impact using VADER sentiment scores."""
+    scores = analyzer.polarity_scores(text)
+    # Compound score: -1 (very negative/stressed) to +1 (very positive)
+    # We map negative compound to higher stress impact
+    return max(0.0, -float(scores['compound'])) 
 
-def predict_stress_level(text):
-    """
-    Predict stress level based on keyword analysis.
-    Returns: 'Low', 'Medium', or 'High'
-    """
+def calculate_stress_score(text, emotion_probas, emotion_labels):
+    """Hybrid stress calculation joining VADER + ML + Keywords."""
     text_lower = text.lower()
-
-    high_count = sum(1 for kw in STRESS_HIGH_KEYWORDS if kw in text_lower)
-    medium_count = sum(1 for kw in STRESS_MEDIUM_KEYWORDS if kw in text_lower)
-    low_count = sum(1 for kw in STRESS_LOW_KEYWORDS if kw in text_lower)
-
-    if high_count >= 2 or (high_count >= 1 and medium_count >= 2):
-        return 'High'
-    elif medium_count >= 2 or (medium_count >= 1 and high_count >= 1):
-        return 'Medium'
-    elif high_count >= 1:
-        return 'Medium'
-    else:
-        return 'Low'
-
+    proba_dict = dict(zip(emotion_labels, emotion_probas))
+    
+    # 1. ML Contribution
+    ml_base = (
+        proba_dict.get('Fearful', 0) * 1.0 +
+        proba_dict.get('Angry', 0) * 0.8 +
+        proba_dict.get('Sad', 0) * 0.4 -
+        proba_dict.get('Happy', 0) * 0.6
+    )
+    ml_norm = max(0.0, min(1.0, float((ml_base + 0.6) / 1.6)))
+    
+    # 2. VADER Contribution
+    vader_impact = get_vader_stress(text)
+    
+    # 3. Keyword Contribution
+    high_k = sum(1 for kw in STRESS_HIGH_KEYWORDS if kw in text_lower)
+    low_k = sum(1 for kw in STRESS_LOW_KEYWORDS if kw in text_lower)
+    keyword_impact = (high_k * 0.15) - (low_k * 0.15)
+    
+    final_score = (ml_norm * 0.5) + (vader_impact * 0.4) + (keyword_impact)
+    final_score = max(0.0, min(1.0, float(final_score))) * 100.0
+    
+    if final_score > 70: return 'High', float(f"{final_score:.1f}")
+    elif final_score > 35: return 'Medium', float(f"{final_score:.1f}")
+    else: return 'Low', float(f"{final_score:.1f}")
 
 def analyze_text(text):
     """
-    Analyze text input for emotion and stress.
-    Uses trained TF-IDF + ML model if available, otherwise falls back to keyword-based.
-
-    Returns: dict with emotion, stress_level, confidence
+    Analyze text input using an ensemble of models and VADER.
     """
-    # Preprocess
     processed = preprocess_text(text)
 
-    # Try to use trained model
-    if os.path.exists(TEXT_MODEL_PATH) and os.path.exists(TFIDF_PATH):
+    if os.path.exists(LR_MODEL_PATH) and os.path.exists(NB_MODEL_PATH) and os.path.exists(TFIDF_PATH):
         try:
-            with open(TFIDF_PATH, 'rb') as f:
-                tfidf = pickle.load(f)
-            with open(TEXT_MODEL_PATH, 'rb') as f:
-                model = pickle.load(f)
+            with open(TFIDF_PATH, 'rb') as f: tfidf = pickle.load(f)
+            with open(LR_MODEL_PATH, 'rb') as f: lr_model = pickle.load(f)
+            with open(NB_MODEL_PATH, 'rb') as f: nb_model = pickle.load(f)
 
             features = tfidf.transform([processed])
-            emotion = model.predict(features)[0]
+            lr_probas = lr_model.predict_proba(features)[0]
+            nb_probas = nb_model.predict_proba(features)[0]
+            
+            # Weighted average for Ensemble (LR gets slightly more weight)
+            final_probas = (lr_probas * 0.6) + (nb_probas * 0.4)
+            labels = lr_model.classes_
+            
+            # Find top emotion
+            max_idx = np.argmax(final_probas)
+            emotion = str(labels[max_idx])
+            
+            # --- Emotion Override / Boost Logic ---
+            text_lower = text.lower()
+            # Normalize to single chars to catch "happyyyyyy" as "hapy"
+            import re
+            text_keyword_norm = re.sub(r'(.)\1+', r'\1', text_lower)
+            
+            # Map normalized keywords to target emotions
+            keyword_map = {
+                'Happy': ['hapy', 'joy', 'smile', 'bright', 'glad', 'excite', 'awesom', 'wonder'],
+                'Sad': ['sad', 'unhapy', 'lonely', 'cry', 'hurt', 'miser', 'depres'],
+                'Angry': ['angry', 'mad', 'furious', 'rage', 'hate', 'irrit'],
+                'Fearful': ['afraid', 'scare', 'terify', 'panic', 'anxi']
+            }
+            
+            # Apply detection boost
+            keyword_found = None
+            for em_target, kws in keyword_map.items():
+                if any(k in text_keyword_norm for k in kws):
+                    # Boost the probability of this emotion
+                    idx = list(labels).index(em_target)
+                    final_probas[idx] += 0.4
+                    keyword_found = em_target
+            
+            # Re-evaluate top emotion after boost
+            max_idx = np.argmax(final_probas)
+            emotion = str(labels[max_idx])
+            
+            # Initial Confidence based on ML probabilities
+            sorted_probas = sorted(final_probas, reverse=True)
+            gap = float(sorted_probas[0] - sorted_probas[1]) if len(sorted_probas) > 1 else float(sorted_probas[0])
+            base_conf = (float(sorted_probas[0]) * 70) + (gap * 30)
+            
+            # --- Advanced Confidence Boost ---
+            v_scores = analyzer.polarity_scores(text)
+            compound = v_scores['compound']
+            
+            boost = 0
+            if emotion == 'Happy' and compound > 0.2: boost += 20 * compound
+            elif emotion in ['Sad', 'Angry', 'Fearful'] and compound < -0.2: boost += 20 * abs(compound)
+            
+            if keyword_found == emotion: boost += 15
+            
+            confidence = min(100.0, float(base_conf + boost))
+            confidence = float(f"{confidence:.1f}")
 
-            # Get confidence from probability
-            probas = model.predict_proba(features)[0]
-            confidence = round(float(max(probas)) * 100, 1)
+            # --- Multi-Model Emotion Check ---
+            if confidence < 50 and abs(compound) > 0.6:
+                if compound > 0.6: emotion = "Happy"
+                elif compound < -0.6: emotion = "Sad" 
+                confidence = float(f"{abs(compound) * 100:.1f}")
 
+            # Integrated Stress Calculation
+            stress_level, stress_score = calculate_stress_score(text, final_probas, labels)
+
+            return {
+                'emotion': emotion,
+                'stress_level': stress_level,
+                'stress_score': stress_score,
+                'confidence': confidence
+            }
         except Exception as e:
-            print(f"Model prediction error: {e}")
-            emotion, confidence = _keyword_emotion(processed)
-    else:
-        emotion, confidence = _keyword_emotion(processed)
+            print(f"Prediction Error: {e}")
+            return _keyword_fallback(text)
+    return _keyword_fallback(text)
 
-    # Predict stress
-    stress = predict_stress_level(text)
-
-    return {
-        'emotion': emotion,
-        'stress_level': stress,
-        'confidence': confidence
-    }
-
-
-def _keyword_emotion(text):
-    """
-    Fallback keyword-based emotion detection.
-    """
-    emotion_keywords = {
-        'Happy': ['happy', 'joy', 'excited', 'wonderful', 'great', 'awesome',
-                   'love', 'amazing', 'fantastic', 'cheerful', 'delighted',
-                   'glad', 'pleased', 'thrilled', 'ecstatic', 'blessed',
-                   'grateful', 'optimistic', 'smile', 'laugh', 'fun',
-                   'celebrate', 'proud', 'confident', 'bright'],
-        'Sad': ['sad', 'depressed', 'unhappy', 'miserable', 'heartbroken',
-                'lonely', 'grief', 'sorrow', 'crying', 'tears', 'lost',
-                'hopeless', 'gloomy', 'down', 'blue', 'disappointed',
-                'devastated', 'hurt', 'pain', 'suffering', 'empty'],
-        'Angry': ['angry', 'furious', 'mad', 'irritated', 'annoyed',
-                  'frustrated', 'rage', 'hate', 'disgusted', 'outraged',
-                  'livid', 'hostile', 'bitter', 'resentful', 'aggressive',
-                  'infuriated', 'provoked', 'offended', 'enraged'],
-        'Fearful': ['afraid', 'scared', 'terrified', 'anxious', 'worried',
-                    'nervous', 'panic', 'frightened', 'dread', 'horror',
-                    'phobia', 'uneasy', 'alarmed', 'threatened', 'insecure',
-                    'overwhelmed', 'stress', 'tension', 'fear', 'trembling'],
-    }
-
+def _keyword_fallback(text):
+    """Basic dictionary fallback with substring matching."""
     text_lower = text.lower()
-    scores = {}
-
-    for emotion, keywords in emotion_keywords.items():
-        score = sum(1 for kw in keywords if kw in text_lower)
-        scores[emotion] = score
-
-    max_score = max(scores.values())
-
-    if max_score == 0:
-        return 'Neutral', 72.0
-
-    detected = max(scores, key=scores.get)
-    # Confidence based on how many keywords matched
-    confidence = min(65 + (max_score * 8), 98)
-
-    return detected, float(confidence)
-
+    # Normalize for fallback check too
+    import re
+    text_norm = re.sub(r'(.)\1{2,}', r'\1\1', text_lower)
+    
+    if any(k in text_norm for k in ['happy', 'joy', 'smile', 'bright', 'glad']): em = 'Happy'
+    elif any(k in text_norm for k in ['sad', 'unhappy', 'lonely', 'cry', 'hurt']): em = 'Sad'
+    elif any(k in text_norm for k in ['angry', 'mad', 'furious', 'rage', 'hate']): em = 'Angry'
+    elif any(k in text_norm for k in ['scared', 'afraid', 'terrified', 'panic']): em = 'Fearful'
+    else: em = 'Neutral'
+    
+    return {
+        'emotion': em,
+        'stress_level': 'Medium' if em in ['Sad', 'Angry', 'Fearful'] else 'Low',
+        'stress_score': 50.0,
+        'confidence': 60.0
+    }
 
 def analyze_image_emotion(image_path):
     """
-    Analyze facial emotion from image using OpenCV for face detection.
-    Uses a simple approach: OpenCV Haar Cascade for face detection +
-    keyword-based fallback (in production, a CNN model would be used).
-
-    Returns: dict with emotion, stress_level, confidence, face_detected
+    Stay consistent with existing image analysis.
     """
     try:
         import cv2
-
-        # Load image
         img = cv2.imread(image_path)
-        if img is None:
-            return {'error': 'Could not read image', 'face_detected': False}
-
-        # Convert to grayscale for face detection
+        if img is None: return {'error': 'Image not found', 'face_detected': False}
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Load Haar Cascade for face detection
-        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-
-        # Detect faces
-        faces = face_cascade.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
-        )
-
+        cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = cascade.detectMultiScale(gray, 1.1, 5, minSize=(30, 30))
+        
         if len(faces) == 0:
-            return {
-                'emotion': 'Neutral',
-                'stress_level': 'Low',
-                'confidence': 50.0,
-                'face_detected': False,
-                'message': 'No face detected in the image. Please upload a clear face photo.'
-            }
-
-        # Face detected - analyze facial features
-        # In a full implementation, the face ROI would be passed to a CNN model
-        # For demo, we use a simple brightness/contrast heuristic
+            return {'emotion': 'Neutral', 'stress_level': 'Low', 'confidence': 50.0, 'face_detected': False}
+            
         (x, y, w, h) = faces[0]
-        face_roi = gray[y:y+h, x:x+w]
-
-        # Analyze face characteristics
-        mean_val = np.mean(face_roi)
-        std_val = np.std(face_roi)
-
-        # Simple heuristic based on face brightness and contrast
-        if mean_val > 140 and std_val > 50:
-            emotion = 'Happy'
-            confidence = 78.0
-        elif mean_val < 80:
-            emotion = 'Sad'
-            confidence = 72.0
-        elif std_val > 60:
-            emotion = 'Angry'
-            confidence = 70.0
-        elif std_val < 30:
-            emotion = 'Fearful'
-            confidence = 68.0
-        else:
-            emotion = 'Neutral'
-            confidence = 75.0
-
-        # Stress from emotion
-        stress_map = {
-            'Happy': 'Low', 'Neutral': 'Low',
-            'Sad': 'Medium', 'Fearful': 'High', 'Angry': 'High'
-        }
-
+        roi = gray[y:y+h, x:x+w]
+        mean, std = float(np.mean(roi)), float(np.std(roi))
+        
+        if mean > 140 and std > 50: em = 'Happy'
+        elif mean < 80: em = 'Sad'
+        elif std > 60: em = 'Angry'
+        elif std < 30: em = 'Fearful'
+        else: em = 'Neutral'
+        
+        stress_map = {'Happy': 'Low', 'Neutral': 'Low', 'Sad': 'Medium', 'Fearful': 'High', 'Angry': 'High'}
+        
         return {
-            'emotion': emotion,
-            'stress_level': stress_map.get(emotion, 'Medium'),
-            'confidence': confidence,
-            'face_detected': True,
-            'faces_count': len(faces)
-        }
-
-    except ImportError:
-        return {
-            'emotion': 'Neutral',
-            'stress_level': 'Low',
-            'confidence': 60.0,
-            'face_detected': False,
-            'message': 'OpenCV is not installed. Install it with: pip install opencv-python'
+            'emotion': em,
+            'stress_level': stress_map.get(em, 'Medium'),
+            'confidence': 75.0,
+            'face_detected': True
         }
     except Exception as e:
-        return {
-            'emotion': 'Neutral',
-            'stress_level': 'Low',
-            'confidence': 50.0,
-            'face_detected': False,
-            'message': f'Error analyzing image: {str(e)}'
-        }
+        return {'emotion': 'Neutral', 'stress_level': 'Low', 'confidence': 50.0, 'face_detected': False, 'msg': str(e)}

@@ -35,38 +35,39 @@ class YouTubeClient:
             print("YouTube API key not found or invalid.")
             return []
 
-        # Map emotions to search queries
+        # Map emotions to search queries (Strictly Movie/Cinema focused)
         queries = {
-            'Happy': 'upbeat pop music happy vibes -sad -depressing -angry -dark',
-            'Sad': 'sad acoustic songs piano -happy -upbeat -party -dance',
-            'Angry': 'heavy metal rock aggressive music -calm -relaxing -soothing',
-            'Fearful': 'calming ambient music for anxiety comfort -scary -horror -loud',
-            'Neutral': 'lofi hip hop radio study relax -heavy -loud',
-            'Relaxed': 'meditation music relaxation -rock -metal -techno'
+            'Happy': 'upbeat movie film songs "original soundtrack" -sad -depressing',
+            'Sad': 'emotional sad movie songs "original soundtrack" -happy -upbeat',
+            'Angry': 'intense action movie background music "original soundtrack" -calm',
+            'Fearful': 'suspense movie background score "original soundtrack" -scary -horror',
+            'Neutral': 'peaceful movie background music OST "original soundtrack" -heavy',
+            'Relaxed': 'relaxing movie songs OST "original soundtrack"'
         }
 
         query = queries.get(emotion, 'relaxing music')
         
-        # Add languages to query if provided
+        # Add languages to query if provided (Prioritize languages for strictness)
         if languages and isinstance(languages, list):
             valid_langs = [l for l in languages if isinstance(l, str) and l.strip()]
             if valid_langs:
-                lang_str = " ".join(valid_langs)
-                query += f" {lang_str}"
+                lang_str = " ".join([f"{l} film songs" for l in valid_langs])
+                query = f"{lang_str} {query}"
         
-        # Refine query to ensure songs, not shorts/reels
-        query += ' "official audio" -shorts -reel'
+        # Refine query to ensure songs, not shorts/reels/beats
+        query += ' "official video" -shorts -reel -beat -type'
         
         try:
             # Call YouTube Search API
             request = self.youtube.search().list(
                 part="snippet",
-                maxResults=15,
+                maxResults=50, # High results to allow for strict filtering
                 q=query,
                 type="video",
                 videoEmbeddable="true",
                 videoCategoryId="10",
-                regionCode="IN" # Restrict to India to avoid geo-blocked content for the user
+                publishedAfter="1990-01-01T00:00:00Z", # Year range check (1990-2026)
+                regionCode="IN"
             )
             # Perform Search
             search_response = request.execute()
@@ -99,10 +100,10 @@ class YouTubeClient:
                 if 'ytAgeRestricted' in content_rating:
                     continue
                 
-                # Check Duration (2m to 7m)
+                # Check Duration (Strict 3m to 10m)
                 duration_str = item['contentDetails'].get('duration')
                 duration_seconds = parse_duration(duration_str)
-                if duration_seconds < 120 or duration_seconds > 420:
+                if duration_seconds < 180 or duration_seconds > 600:
                     continue
 
                 video = {
@@ -114,9 +115,9 @@ class YouTubeClient:
                 }
                 valid_videos.append(video)
             
-            # Shuffle to give variety
+            # Shuffle and limit
             random.shuffle(valid_videos)
-            return valid_videos[:10] # Return top 10 valid ones
+            return valid_videos # Return all valid ones; JS will handle pagination
 
         except HttpError as e:
             print(f"An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))

@@ -124,6 +124,10 @@
 
             <div class="language-grid mb-6">
                 <label class="lang-option">
+                    <input type="checkbox" name="language" value="Kannada" onchange="handleLangSelection(this)">
+                    <span class="lang-label">Kannada</span>
+                </label>
+                <label class="lang-option">
                     <input type="checkbox" name="language" value="Hindi" onchange="handleLangSelection(this)">
                     <span class="lang-label">Hindi</span>
                 </label>
@@ -148,13 +152,23 @@
                     <span class="lang-label">Punjabi</span>
                 </label>
                 <label class="lang-option">
-                    <input type="checkbox" name="language" value="Korean" onchange="handleLangSelection(this)">
-                    <span class="lang-label">Korean (K-Pop)</span>
-                </label>
-                <label class="lang-option">
                     <input type="checkbox" name="language" value="Instrumental" onchange="handleLangSelection(this)">
                     <span class="lang-label">Instrumental</span>
                 </label>
+            </div>
+
+            <div class="format-selection mb-8">
+                <h4 class="mb-2 text-center" style="font-size: 0.95rem; font-weight: 600;">Choose Playback Format</h4>
+                <div style="display: flex; justify-content: center; gap: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="playback-format" value="both" checked>
+                        <span>🎬 Video + Audio</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="playback-format" value="audio">
+                        <span>🎧 Audio Only</span>
+                    </label>
+                </div>
             </div>
 
             <div style="display: flex; gap: 1rem; justify-content: center;">

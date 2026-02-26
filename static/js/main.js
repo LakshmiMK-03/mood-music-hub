@@ -267,12 +267,16 @@ function submitLanguages() {
     const checked = document.querySelectorAll('input[name="language"]:checked');
     const languages = Array.from(checked).map(cb => cb.value);
 
+    // Get selected playback format
+    const format = document.querySelector('input[name="playback-format"]:checked')?.value || 'both';
+
     // Get current emotion from result
     const emotion = document.getElementById('result-emotion').textContent || 'Neutral';
 
     // Build query params
     const params = new URLSearchParams();
     params.append('emotion', emotion);
+    params.append('format', format);
     if (languages.length > 0) {
         params.append('languages', languages.join(','));
     }
@@ -303,16 +307,28 @@ function playSong(title, artist, videoId, shouldAutoplay = true) {
         const index = currentVideos.findIndex(v => v.videoId === videoId);
         if (index !== -1) currentIndex = index;
 
+        // Check format preference from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const format = urlParams.get('format') || 'both';
+
         // Embed YouTube video
         const wrapper = document.getElementById('youtube-embed-wrapper');
         const defaultArt = document.getElementById('default-art');
         const playIcon = document.getElementById('play-icon');
 
-        defaultArt.style.display = 'none';
-        wrapper.style.display = 'block';
+        if (format === 'audio') {
+            // Audio Only mode: Hide video wrapper, show default art
+            defaultArt.style.display = 'flex';
+            defaultArt.style.background = 'var(--gradient-primary)';
+            wrapper.style.display = 'none';
+        } else {
+            // Video + Audio mode: Show video, hide default art
+            defaultArt.style.display = 'none';
+            wrapper.style.display = 'block';
+        }
 
         // If player exists, load new video
-        if (player) {
+        if (player && typeof player.loadVideoById === 'function') {
             if (shouldAutoplay) {
                 player.loadVideoById(videoId);
             } else {
@@ -391,13 +407,11 @@ function playPrevious() {
 
 
 function selectEmotion(emotion) {
-    document.querySelectorAll('.emotion-btn').forEach(btn => {
+    document.querySelectorAll('.emotion-btn[data-emotion]').forEach(btn => {
         if (btn.dataset.emotion === emotion) {
             btn.classList.add('active');
-            btn.style.display = 'inline-flex';
         } else {
             btn.classList.remove('active');
-            btn.style.display = 'none';
         }
     });
     renderPlaylist(emotion);
@@ -435,29 +449,26 @@ function renderPlaylist(emotion) {
             currentVideos = data.videos;
             currentIndex = 0;
 
-            data.videos.forEach((video, index) => {
-                const div = document.createElement('button');
-                div.className = 'track-item';
-                div.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <img src="${video.thumbnail}" alt="Thumbnail" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
-                    <div style="text-align: left;">
-                        <div style="font-weight: 600; font-size: 0.9rem; line-height: 1.2;">${video.title}</div>
-                        <div style="font-size: 0.8rem; color: var(--muted-foreground);">${video.channelTitle}</div>
-                    </div>
-                </div>
-                <i data-lucide="external-link" style="width: 16px; color: var(--primary);"></i>
-            `;
+            const initialTracks = currentVideos.slice(0, 8);
+            list.innerHTML = '';
+
+            initialTracks.forEach((video, index) => {
+                const div = createTrackElement(video);
                 div.onclick = () => playSong(video.title, video.channelTitle, video.videoId);
                 list.appendChild(div);
             });
 
-            // Auto-load the first track (but don't autoplay unless user clicked)
+            // Handle "Show More" visibility
+            const showMoreContainer = document.getElementById('show-more-container');
+            if (currentVideos.length > 8) {
+                showMoreContainer.style.display = 'block';
+            } else {
+                showMoreContainer.style.display = 'none';
+            }
+
+            // Auto-load the first track
             if (currentVideos.length > 0) {
-                // Determine if we should autoplay (only if this wasn't an initial load)
-                // For now, just load it so controls work.
                 const first = currentVideos[0];
-                // Pass false for autoplay
                 playSong(first.title, first.channelTitle, first.videoId, false);
             }
 
@@ -469,31 +480,36 @@ function renderPlaylist(emotion) {
         });
 }
 
-function playSong(title, artist, videoId) {
-    document.getElementById('player-title').textContent = title;
-    document.getElementById('player-artist').textContent = artist;
-
-    if (videoId) {
-        // Embed YouTube video
-        const wrapper = document.getElementById('youtube-embed-wrapper');
-        const defaultArt = document.getElementById('default-art');
-
-        defaultArt.style.display = 'none';
-        wrapper.style.display = 'block';
-
-        wrapper.innerHTML = `
-            <iframe 
-                width="100%" 
-                height="100%" 
-                src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
-                title="YouTube video player" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen>
-            </iframe>
-        `;
-    }
+function createTrackElement(video) {
+    const div = document.createElement('button');
+    div.className = 'track-item';
+    div.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <img src="${video.thumbnail}" alt="Thumbnail" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+            <div style="text-align: left;">
+                <div style="font-weight: 600; font-size: 0.9rem; line-height: 1.2;">${video.title}</div>
+                <div style="font-size: 0.8rem; color: var(--muted-foreground);">${video.channelTitle}</div>
+            </div>
+        </div>
+        <i data-lucide="external-link" style="width: 16px; color: var(--primary);"></i>
+    `;
+    return div;
 }
+
+function showMoreTracks() {
+    const list = document.getElementById('playlist-tracks');
+    const remainingTracks = currentVideos.slice(8);
+
+    remainingTracks.forEach((video) => {
+        const div = createTrackElement(video);
+        div.onclick = () => playSong(video.title, video.channelTitle, video.videoId);
+        list.appendChild(div);
+    });
+
+    document.getElementById('show-more-container').style.display = 'none';
+    if (window.lucide) lucide.createIcons();
+}
+
 
 
 // ===== Relaxation - Breathing Exercise =====

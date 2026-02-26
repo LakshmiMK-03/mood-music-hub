@@ -1,26 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root {
-    --background: #f5f6fa;
+    --background: #ffffff;
     --foreground: #1a1f36;
-    --primary: #1a1f36;
+    --primary: #4a90e2;
     --primary-foreground: #ffffff;
-    --secondary: #3ecf8e;
-    --muted: #eef0f6;
-    --muted-foreground: #525a76;
-    --accent: #e8b4c8;
-    --border: #e2e5ef;
+    --secondary: #ff85a1;
+    --muted: rgba(240, 242, 248, 0.6);
+    --muted-foreground: #64748b;
+    --accent: #fbc2eb;
+    --border: rgba(226, 229, 239, 0.5);
 
-    --gradient-primary: linear-gradient(135deg, #1a1f36, #2d3561);
-    --gradient-hero: linear-gradient(180deg, #ffffff 0%, #f0f2f8 100%);
+    --gradient-main: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 50%, #fbc2eb 100%);
+    --gradient-hero: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
 
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
     --font-serif: 'Playfair Display', Georgia, serif;
 
-    --radius: 0.75rem;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --radius: 1rem;
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.05);
+
+    --glass: rgba(255, 255, 255, 0.7);
+    --glass-blur: blur(12px);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.3);
+
+    --gradient-primary: linear-gradient(135deg, #4a90e2 0%, #fbc2eb 100%);
+    --shadow-glow: 0 10px 20px rgba(74, 144, 226, 0.2);
 }
 
 * {
@@ -30,10 +37,16 @@
 }
 
 body {
-    background-color: var(--background);
+    background: var(--gradient-main);
+    background-image:
+        radial-gradient(circle at 10% 20%, hsla(200, 60%, 85%, 0.4), transparent 40%),
+        radial-gradient(circle at 90% 80%, hsla(330, 50%, 88%, 0.4), transparent 40%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='wave' width='100' height='20' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 10 Q 25 20 50 10 T 100 10' stroke='white' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23wave)' /%3E%3C/svg%3E");
+    background-attachment: fixed;
     color: var(--foreground);
     font-family: var(--font-body);
     line-height: 1.6;
+    min-height: 100vh;
 }
 
 h1,
@@ -58,8 +71,10 @@ a {
 
 /* ===== Navbar ===== */
 .navbar {
-    background: #ffffff;
-    border-bottom: 1px solid var(--border);
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: var(--glass-border);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -142,14 +157,19 @@ a {
 /* ===== Hero Section ===== */
 .hero {
     position: relative;
-    min-height: 88vh;
+    min-height: 80vh;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     background: var(--gradient-hero);
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    margin: 2rem;
+    border-radius: 2rem;
     overflow: hidden;
-    padding: 4rem 0;
+    padding: 6rem 2rem;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.05);
 }
 
 .hero-content {
@@ -257,17 +277,20 @@ a {
 }
 
 .feature-card {
-    background: #ffffff;
-    border-radius: 1rem;
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 1.5rem;
     padding: 2rem;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.2s, box-shadow 0.2s;
+    border: var(--glass-border);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .feature-icon {
@@ -492,7 +515,12 @@ a {
     }
 
     .navbar-content {
-        padding: 0 0.5rem;
+        padding: 0 1rem;
+    }
+
+    .hero {
+        margin: 1rem;
+        padding: 4rem 1rem;
     }
 
     .orb {

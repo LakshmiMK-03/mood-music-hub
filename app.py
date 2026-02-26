@@ -1,11 +1,17 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
 from flask_cors import CORS
 from emotion_model import analyze_text, analyze_image_emotion
+from analytics import log_analysis, get_stats
 import os
 import json
 import hashlib
 from dotenv import load_dotenv
 from youtube_client import YouTubeClient
+
+from database import (
+    get_user_by_email, create_user, get_all_users, 
+    delete_user, update_user_role, get_db_connection
+)
 
 load_dotenv()
 youtube_client = YouTubeClient()
@@ -16,27 +22,7 @@ CORS(app)
 
 # Ensure directories exist
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
-USERS_FILE = os.path.join(os.path.dirname(__file__), 'users.json')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Initialize users file with default admin
-if not os.path.exists(USERS_FILE):
-    default_admin = {
-        'name': 'Admin',
-        'email': 'admin@moodmusic.com',
-        'password': hashlib.sha256('admin123'.encode()).hexdigest(),
-        'role': 'admin'
-    }
-    with open(USERS_FILE, 'w') as f:
-        json.dump([default_admin], f, indent=2)
-
-def load_users():
-    with open(USERS_FILE, 'r') as f:
-        return json.load(f)
-
-def save_users(users):
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -108,6 +94,10 @@ def api_analyze_text():
         return jsonify({'error': 'Text cannot be empty'}), 400
 
     result = analyze_text(text)
+    
+    # Log analysis result
+    log_analysis('text', text, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+    
     return jsonify(result)
 
 
@@ -131,6 +121,11 @@ def api_analyze_image():
 
     try:
         result = analyze_image_emotion(temp_path)
+        
+        # Log analysis result
+        if result.get('face_detected'):
+            log_analysis('image', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+            
         return jsonify(result)
     finally:
         # Clean up
@@ -181,20 +176,17 @@ def api_register():
     if len(password) < 6:
         return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
 
-    users = load_users()
-
     # Check if email already exists
-    if any(u['email'] == email for u in users):
+    if get_user_by_email(email):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
 
     # Create user (default role: user)
-    users.append({
-        'name': name,
-        'email': email,
-        'password': hash_password(password),
-        'role': 'user'
-    })
-    save_users(users)
+    success = create_user(name, hash_password(password), email, 'user')
+    
+    if success:
+        return jsonify({'success': True, 'message': 'Registration successful!'})
+    else:
+        return jsonify({'success': False, 'message': 'Database error during registration'}), 500
 
     return jsonify({'success': True, 'message': 'Registration successful!'})
 
@@ -212,18 +204,17 @@ def api_login():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
 
-    users = load_users()
-    user = next((u for u in users if u['email'] == email), None)
+    user = get_user_by_email(email)
 
     if not user or user['password'] != hash_password(password):
         return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
 
     role = user.get('role', 'user')
-    session['user'] = {'name': user['name'], 'email': user['email'], 'role': role}
+    session['user'] = {'name': user['username'], 'email': user['email'], 'role': role}
     return jsonify({
         'success': True,
         'message': 'Login successful!',
-        'user': {'name': user['name'], 'role': role}
+        'user': {'name': user['username'], 'role': role}
     })
 
 
@@ -255,10 +246,36 @@ def api_admin_users():
     """Get all registered users (admin only)."""
     if not is_admin():
         return jsonify({'error': 'Unauthorized'}), 403
-    users = load_users()
-    # Return users without passwords
-    safe_users = [{'name': u['name'], 'email': u['email'], 'role': u.get('role', 'user')} for u in users]
+    users = get_all_users()
+    # Map 'username' from DB to 'name' for frontend compatibility
+    safe_users = [{'name': u['username'], 'email': u['email'], 'role': u['role']} for u in users]
     return jsonify({'users': safe_users})
+
+
+@app.route('/api/admin/stats', methods=['GET'])
+def api_admin_stats():
+    """Get aggregated analytics stats (admin only)."""
+    if not is_admin():
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    stats = get_stats()
+    
+    # User counts from SQL
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM users')
+    total_users = cursor.fetchone()[0]
+    cursor.execute('SELECT COUNT(*) FROM users WHERE role = "admin"')
+    admin_users = cursor.fetchone()[0]
+    conn.close()
+
+    stats['user_counts'] = {
+        'total': total_users,
+        'admins': admin_users,
+        'users': total_users - admin_users
+    }
+    
+    return jsonify(stats)
 
 
 @app.route('/api/admin/users/delete', methods=['POST'])
@@ -273,9 +290,7 @@ def api_admin_delete_user():
     if email == 'admin@moodmusic.com':
         return jsonify({'success': False, 'message': 'Cannot delete the default admin'}), 400
 
-    users = load_users()
-    users = [u for u in users if u['email'] != email]
-    save_users(users)
+    delete_user(email)
     return jsonify({'success': True, 'message': 'User deleted'})
 
 
@@ -295,13 +310,11 @@ def api_admin_change_role():
     if new_role not in ('admin', 'user'):
         return jsonify({'success': False, 'message': 'Invalid role'}), 400
 
-    users = load_users()
-    for u in users:
-        if u['email'] == email:
-            u['role'] = new_role
-            break
-    save_users(users)
-    return jsonify({'success': True, 'message': f'Role changed to {new_role}'})
+    success = update_user_role(email, new_role)
+    if success:
+        return jsonify({'success': True, 'message': f'Role changed to {new_role}'})
+    else:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
 
 
 if __name__ == '__main__':

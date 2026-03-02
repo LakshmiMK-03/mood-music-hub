@@ -18,7 +18,7 @@
 
 <body>
     <nav class="navbar">
-        <div class="container navbar-content" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%;">
+        <div class="navbar-content" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; padding: 0 2rem; height: 4.5rem;">
             <!-- Left: Logo -->
             <div style="display: flex; align-items: center; justify-content: flex-start;">
                 <a href="/" class="logo">
@@ -36,7 +36,7 @@
             </div>
 
             <!-- Right: Auth / User Info -->
-            <div style="display: flex; gap: 0.75rem; align-items: center; justify-content: flex-end;">
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: flex-end;">
                 {% if session.get('user') and session['user'].get('role') == 'admin' %}
                 <a href="/admin" class="btn btn-primary" style="padding: 0.5rem 1.25rem;"><i data-lucide="shield"
                         style="width:16px; margin-right:0.4rem;"></i> Admin</a>
@@ -44,11 +44,12 @@
                    onclick="return confirm('Are you sure you want to logout?');"><i data-lucide="log-out"
                         style="width:16px; margin-right:0.4rem;"></i> Logout</a>
                 {% elif session.get('user') %}
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <span style="font-size: 0.9rem; color: var(--muted-foreground);">Hi, {{ session['user']['name'] }}</span>
-                    <a href="/logout" class="btn btn-outline" style="padding: 0.5rem 1.25rem;"
-                       onclick="return confirm('Are you sure you want to logout?');"><i data-lucide="log-out"
-                            style="width:16px; margin-right:0.4rem;"></i> Logout</a>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 0.95rem; color: var(--muted-foreground); font-weight: 500;">Hi, {{ session['user']['name'] }}</span>
+                    <a href="/logout" class="btn btn-outline" style="padding: 0.6rem 1.5rem; border-radius: 12px; background: white; border: 1px solid #e2e8f0; font-weight: 600;"
+                       onclick="return confirm('Are you sure you want to logout?');">
+                       <i data-lucide="log-out" style="width:18px; margin-right:0.5rem; vertical-align: middle;"></i> Logout
+                    </a>
                 </div>
                 {% else %}
                 <div style="display: flex; gap: 0.75rem;">

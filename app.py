@@ -69,6 +69,11 @@ def login():
 def register():
     return render_template('register.html')
 
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/')
+
 @app.route('/admin')
 def admin_panel():
     if not is_admin():
@@ -318,4 +323,10 @@ def api_admin_change_role():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    print(">>> FLASK SERVER STARTING ON PORT 5000")
+    try:
+        app.run(debug=False, port=5000, host='127.0.0.1')
+    except Exception as e:
+        with open("init_error.log", "w") as f:
+            f.write(str(e))
+        print(f"FATAL STARTUP ERROR: {e}")

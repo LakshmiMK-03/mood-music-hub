@@ -449,18 +449,19 @@ function renderPlaylist(emotion) {
             currentVideos = data.videos;
             currentIndex = 0;
 
-            const initialTracks = currentVideos.slice(0, 8);
+            // Show first 10 tracks (Strictly)
+            const initialTracks = currentVideos.slice(0, 10);
             list.innerHTML = '';
 
             initialTracks.forEach((video, index) => {
-                const div = createTrackElement(video);
+                const div = createTrackElement(video, index);
                 div.onclick = () => playSong(video.title, video.channelTitle, video.videoId);
                 list.appendChild(div);
             });
 
-            // Handle "Show More" visibility
+            // Handle "Show More" visibility (if more than 10)
             const showMoreContainer = document.getElementById('show-more-container');
-            if (currentVideos.length > 8) {
+            if (currentVideos.length > 10) {
                 showMoreContainer.style.display = 'block';
             } else {
                 showMoreContainer.style.display = 'none';
@@ -480,9 +481,10 @@ function renderPlaylist(emotion) {
         });
 }
 
-function createTrackElement(video) {
+function createTrackElement(video, index = 0) {
     const div = document.createElement('button');
-    div.className = 'track-item';
+    div.className = 'track-item track-item-animate';
+    div.style.animationDelay = `${index * 0.05}s`;
     div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <img src="${video.thumbnail}" alt="Thumbnail" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
@@ -498,10 +500,11 @@ function createTrackElement(video) {
 
 function showMoreTracks() {
     const list = document.getElementById('playlist-tracks');
-    const remainingTracks = currentVideos.slice(8);
+    // Show remaining tracks (starting from 10, up to 18 total)
+    const remainingTracks = currentVideos.slice(10);
 
-    remainingTracks.forEach((video) => {
-        const div = createTrackElement(video);
+    remainingTracks.forEach((video, index) => {
+        const div = createTrackElement(video, index);
         div.onclick = () => playSong(video.title, video.channelTitle, video.videoId);
         list.appendChild(div);
     });

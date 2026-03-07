@@ -1,78 +1,71 @@
-import sqlite3
 import os
 from datetime import datetime
 from database import get_db_connection
 
 def log_analysis(source, text, emotion, stress_level, confidence, stress_score):
     """
-    Log an analysis event to hub.db (SQLite).
+    Log an analysis event to Supabase.
     source: 'text' or 'image'
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_db_connection()
         
         text_preview = (text[:50] + '...') if text and len(text) > 50 else text
         
-        cursor.execute('''
-            INSERT INTO history (timestamp, source, text_preview, emotion, stress_level, stress_score, confidence)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            datetime.now().isoformat(),
-            source,
-            text_preview,
-            emotion,
-            stress_level,
-            float(stress_score),
-            float(confidence)
-        ))
+        data = {
+            "timestamp": datetime.now().isoformat(),
+            "source": source,
+            "text_preview": text_preview,
+            "emotion": emotion,
+            "stress_level": stress_level,
+            "stress_score": float(stress_score),
+            "confidence": float(confidence)
+        }
         
-        # Enforce history limit (last 1000)
-        cursor.execute('''
-            DELETE FROM history 
-            WHERE id NOT IN (
-                SELECT id FROM history ORDER BY id DESC LIMIT 1000
-            )
-        ''')
+        supabase.table('history').insert(data).execute()
         
-        conn.commit()
-        conn.close()
+        # Note: We don't manually enforce 1000 limit here to save on API calls, 
+        # Supabase can handle much more or use a CRON job later.
+        
     except Exception as e:
-        print(f"❌ DB Logging Error: {e}")
+        print(f"❌ Supabase Logging Error: {e}")
 
 def get_stats():
     """
-    Aggregate statistics from SQLite for the admin dashboard.
+    Aggregate statistics from Supabase for the admin dashboard.
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_db_connection()
         
-        # Total
-        cursor.execute('SELECT COUNT(*) FROM history')
-        total = cursor.fetchone()[0]
+        # 1. Total History Count
+        # Using select with count='exact' to get total without fetching rows
+        response = supabase.table('history').select('*', count='exact').execute()
+        total = response.count if response.count is not None else 0
         
-        # Emotion Dist
+        # 2. Emotion Dist
         emotions = ['Happy', 'Sad', 'Angry', 'Neutral', 'Fearful']
         emotion_dist = {e: 0 for e in emotions}
-        cursor.execute('SELECT emotion, COUNT(*) FROM history GROUP BY emotion')
-        for em, count in cursor.fetchall():
-            if em in emotion_dist: 
-                emotion_dist[str(em)] = int(count)
+        
+        # In Supabase, we fetch IDs and emotions to count on the app side (or use RPC)
+        # Fetching all to count for now (small scale)
+        resp_em = supabase.table('history').select('emotion').execute()
+        for item in resp_em.data:
+            em = item.get('emotion')
+            if em in emotion_dist:
+                emotion_dist[em] += 1
             
-        # Stress Dist
+        # 3. Stress Dist
         stresses = ['Low', 'Medium', 'High']
         stress_dist = {s: 0 for s in stresses}
-        cursor.execute('SELECT stress_level, COUNT(*) FROM history GROUP BY stress_level')
-        for sl, count in cursor.fetchall():
-            if sl in stress_dist: 
-                stress_dist[str(sl)] = int(count)
+        resp_st = supabase.table('history').select('stress_level').execute()
+        for item in resp_st.data:
+            sl = item.get('stress_level')
+            if sl in stress_dist:
+                stress_dist[sl] += 1
             
-        # Recent Activity (last 5)
-        cursor.execute('SELECT * FROM history ORDER BY id DESC LIMIT 5')
-        recent = [dict(row) for row in cursor.fetchall()]
-        
-        conn.close()
+        # 4. Recent Activity (last 5)
+        resp_recent = supabase.table('history').select('*').order('id', desc=True).limit(5).execute()
+        recent = resp_recent.data
         
         return {
             'total_analyses': total,
@@ -81,5 +74,5 @@ def get_stats():
             'recent_activity': recent
         }
     except Exception as e:
-        print(f"❌ DB Stats Error: {e}")
+        print(f"❌ Supabase Stats Error: {e}")
         return {'error': str(e)}

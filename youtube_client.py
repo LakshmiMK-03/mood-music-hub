@@ -60,8 +60,8 @@ class YouTubeClient:
         if "Telugu" in lang_str and "Hindi" not in lang_str:
             negative_filters += " -hindi -bollywood"
 
-        # USER REQUEST: 2025 to 2015 ONLY
-        year_options = ['2025', '2024', '']
+        # USER REQUEST: 2010 to 2025
+        year_options = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2015', '2010', '']
         year = random.choice(year_options)
 
         # Broad strategies to ensure we ALWAYS find something
@@ -128,14 +128,14 @@ class YouTubeClient:
                     if strict_telugu and "hindi" in title and "telugu" not in title:
                         continue
 
-                    # USER REQUEST: Year Check (2015-2025)
+                    # USER REQUEST: Year Check (2010-2025)
                     published_at = item['snippet']['publishedAt']
                     year_val = int(published_at[:4])
-                    if year_val < 2015 or year_val > 2025: continue
+                    if year_val < 2010 or year_val > 2025: continue
 
-                    # Duration Check (45s - 15m)
+                    # Duration Check (180s - 600s or 3m - 10m)
                     dur = parse_duration(item['contentDetails'].get('duration'))
-                    if dur < 45 or dur > 900: continue
+                    if dur < 180 or dur > 600: continue
 
                     valid_videos.append({
                         'title': item['snippet']['title'],
@@ -154,13 +154,14 @@ class YouTubeClient:
                     f.write(f"Query ERROR: {e}\n")
                 continue
 
-        # FINAL CHRONOLOGY LOGIC: Strictly 2026 -> 2015
+        # FINAL CHRONOLOGY LOGIC: Strictly 2025 -> 2010
         valid_videos.sort(key=lambda x: x['publishedAt'], reverse=True)
-        
-        # Variety Sampling while keeping it "Trending" (Top 35 newest)
+
+        # Variety Sampling while keeping it "Trending" (Top 50 newest/highest relevance)
         if len(valid_videos) > 18:
-            pool = valid_videos[:35] 
+            pool = valid_videos[:50] 
             valid_videos = random.sample(pool, 18)
+            # Re-sort to ensure descending order after sampling
             valid_videos.sort(key=lambda x: x['publishedAt'], reverse=True)
 
         # Logging for Verification

@@ -265,14 +265,14 @@ def api_admin_stats():
     
     stats = get_stats()
     
-    # User counts from SQL
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM users')
-    total_users = cursor.fetchone()[0]
-    cursor.execute('SELECT COUNT(*) FROM users WHERE role = "admin"')
-    admin_users = cursor.fetchone()[0]
-    conn.close()
+    # User counts from Supabase
+    supabase = get_db_connection()
+    
+    total_users_resp = supabase.table('users').select('*', count='exact').execute()
+    total_users = total_users_resp.count if total_users_resp.count is not None else 0
+    
+    admin_users_resp = supabase.table('users').select('*', count='exact').eq('role', 'admin').execute()
+    admin_users = admin_users_resp.count if admin_users_resp.count is not None else 0
 
     stats['user_counts'] = {
         'total': total_users,

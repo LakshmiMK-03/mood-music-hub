@@ -1,152 +1,76 @@
-import sqlite3
 import os
 import json
 from datetime import datetime
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'hub.db')
+load_dotenv()
+
+URL: str = os.environ.get("SUPABASE_URL")
+KEY: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(URL, KEY)
 
 def get_db_connection():
-    """Create a connection to the SQLite database."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Returns the supabase client instance."""
+    return supabase
 
 def init_db():
-    """Initialize the database schema."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            email TEXT,
-            role TEXT DEFAULT 'user',
-            date_joined TEXT,
-            last_login TEXT
-        )
-    ''')
-    
-    # History table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            source TEXT,
-            text_preview TEXT,
-            emotion TEXT,
-            stress_level TEXT,
-            stress_score REAL,
-            confidence REAL
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    print(f"✅ Database initialized at {DB_PATH}")
-
-def migrate_data():
-    """Migrate legacy JSON data to SQLite."""
-    init_db()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 1. Migrate Users
-    users_file = os.path.join(os.path.dirname(__file__), 'users.json')
-    if os.path.exists(users_file):
-        try:
-            with open(users_file, 'r') as f:
-                users = json.load(f)
-                for uname, udata in users.items():
-                    cursor.execute('''
-                        INSERT OR IGNORE INTO users (username, password, email, role, date_joined)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', (uname, udata['password'], udata.get('email'), udata.get('role', 'user'), datetime.now().isoformat()))
-            print(f"✅ Migrated {len(users)} users from users.json")
-        except Exception as e:
-            print(f"❌ Error migrating users: {e}")
-            
-    # 2. Migrate History
-    history_file = os.path.join(os.path.dirname(__file__), 'history.json')
-    if os.path.exists(history_file):
-        try:
-            with open(history_file, 'r') as f:
-                history = json.load(f)
-                for event in history:
-                    cursor.execute('''
-                        INSERT INTO history (timestamp, source, text_preview, emotion, stress_level, stress_score, confidence)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        event.get('timestamp'),
-                        event.get('source'),
-                        event.get('text_Preview') or event.get('text_preview'), # Handle potential case diff
-                        event.get('emotion'),
-                        event.get('stress_level'),
-                        event.get('stress_score', 0.0),
-                        event.get('confidence', 0.0)
-                    ))
-            print(f"✅ Migrated {len(history)} events from history.json")
-        except Exception as e:
-            print(f"❌ Error migrating history: {e}")
-            
-    conn.commit()
-    conn.close()
+    """
+    Supabase tables are usually created in the dashboard.
+    For this project, we'll assume they are created via the SQL Editor 
+    or the migration script.
+    """
+    print("✅ Supabase Client initialized.")
 
 def get_user_by_email(email):
-    """Retrieve a user by email."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE email = ?', (email.lower(),))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    """Retrieve a user by email from Supabase."""
+    try:
+        response = supabase.table('users').select('*').eq('email', email.lower()).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error fetching user: {e}")
+        return None
 
 def create_user(username, password, email, role='user'):
-    """Insert a new user into the database."""
+    """Insert a new user into Supabase."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO users (username, password, email, role, date_joined)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (username, password, email.lower(), role, datetime.now().isoformat()))
-        conn.commit()
-        conn.close()
+        data = {
+            "username": username,
+            "password": password,
+            "email": email.lower(),
+            "role": role,
+            "date_joined": datetime.now().isoformat()
+        }
+        supabase.table('users').insert(data).execute()
         return True
-    except sqlite3.IntegrityError:
+    except Exception as e:
+        print(f"Error creating user: {e}")
         return False
 
 def get_all_users():
-    """Retrieve all users without passwords."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT username, email, role FROM users')
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return rows
+    """Retrieve all users without passwords from Supabase."""
+    try:
+        response = supabase.table('users').select('username, email, role').execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching all users: {e}")
+        return []
 
 def delete_user(email):
-    """Delete a user by email."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM users WHERE email = ?', (email.lower(),))
-    conn.commit()
-    conn.close()
+    """Delete a user by email in Supabase."""
+    try:
+        supabase.table('users').delete().eq('email', email.lower()).execute()
+    except Exception as e:
+        print(f"Error deleting user: {e}")
 
 def update_user_role(email, new_role):
-    """Update a user's role."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT id FROM users WHERE email = ?', (email.lower(),))
-    if not cursor.fetchone():
-        conn.close()
+    """Update a user's role in Supabase."""
+    try:
+        response = supabase.table('users').update({"role": new_role}).eq('email', email.lower()).execute()
+        return len(response.data) > 0
+    except Exception as e:
+        print(f"Error updating role: {e}")
         return False
-    cursor.execute('UPDATE users SET role = ? WHERE email = ?', (new_role, email.lower()))
-    conn.commit()
-    conn.close()
-    return True
 
 if __name__ == "__main__":
-    migrate_data()
+    init_db()

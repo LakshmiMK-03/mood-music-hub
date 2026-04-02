@@ -5,9 +5,27 @@ Uses VADER + Keyword mapping for high reliability without native dependencies.
 
 import os
 import re
+import hashlib
+import requests
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-# Removed numpy and cv2 to prevent Access Violation crashes on this system.
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+# In-memory inference cache mapping: SHA256 -> Emotion Data
+IMAGE_INFERENCE_CACHE = {}
+
+def get_image_hash(image_path):
+    hash_md5 = hashlib.md5()
+    try:
+        with open(image_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception:
+        return None
 
 analyzer = SentimentIntensityAnalyzer()
 
@@ -74,11 +92,83 @@ def analyze_text(text):
     }
 
 def analyze_image_emotion(image_path):
-    """Fallback version without CV2/Numpy."""
+    """
+    Cloud-offloaded image analysis using HuggingFace Inference API.
+    Fault Tolerant: Caching, Auto-Resize (Payload Compression), and Timeout Fallbacks.
+    """
+    # 1. Cryptographic Memoization (Caching)
+    img_hash = get_image_hash(image_path)
+    if img_hash and img_hash in IMAGE_INFERENCE_CACHE:
+        print(f">>> ✅ Image Hash matched in CACHE! Bypassing API delay.")
+        return IMAGE_INFERENCE_CACHE[img_hash]
+
+    # 2. Payload Compression (Resize to 224x224 JPEG)
+    try:
+        if Image:
+            with Image.open(image_path) as img:
+                img = img.convert("RGB")
+                img = img.resize((224, 224), Image.LANCZOS)
+                img.save(image_path, "JPEG", quality=85)
+                print(">>> 📉 Image successfully shrunk to 224x224.")
+    except Exception as e:
+        print(f"PIL Resize Error: {e}")
+
+    # 3. Cloud API Inference Execution w/ Timeout
+    HF_API_URL = "https://api-inference.huggingface.co/models/dima806/facial_emotions_image_detection"
+    headers = {}
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+        
+    try:
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+            
+        print(">>> 🌐 Sending payload to HuggingFace API...")
+        response = requests.post(HF_API_URL, headers=headers, data=image_bytes, timeout=20)
+        
+        if response.status_code == 200:
+            predictions = response.json()
+            if isinstance(predictions, list) and len(predictions) > 0 and isinstance(predictions[0], list):
+                 predictions = predictions[0]
+
+            if predictions and len(predictions) > 0:
+                top_pred = predictions[0]
+                label = top_pred.get("label", "neutral").lower()
+                score = top_pred.get("score", 0.5)
+                
+                em = 'Neutral'
+                if any(k in label for k in ['happ', 'joy']): em = 'Happy'
+                elif any(k in label for k in ['sad', 'disgust', 'sorrow']): em = 'Sad'
+                elif any(k in label for k in ['ang', 'mad']): em = 'Angry'
+                elif any(k in label for k in ['fear', 'scare', 'surprise']): em = 'Fearful'
+                
+                stress_level, stress_score = calculate_stress_score(em, em)
+                
+                result = {
+                    'emotion': em,
+                    'stress_level': stress_level,
+                    'stress_score': stress_score,
+                    'confidence': float(f"{score * 100:.1f}"),
+                    'face_detected': True
+                }
+                
+                # Store in Cache
+                if img_hash:
+                    IMAGE_INFERENCE_CACHE[img_hash] = result
+                    
+                return result
+        else:
+            print(f"HF API Error {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Image API Timeout or System Error: {e}")
+        
+    # 4. Graceful Fallback
     return {
         'emotion': 'Neutral', 
-        'stress_level': 'Low', 
+        'stress_level': 'Low',
+        'stress_score': 10.0,
         'confidence': 50.0, 
         'face_detected': False, 
-        'msg': 'Image analysis requires binary libraries currently disabled for stability.'
+        'msg': 'Image API timeout or rate limit exceeded. Falling back to Neutral.'
     }

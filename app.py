@@ -10,7 +10,7 @@ from youtube_client import YouTubeClient
 
 from database import (
     get_user_by_email, create_user, get_all_users, 
-    delete_user, update_user_role, get_db_connection
+    delete_user, update_user_role
 )
 
 load_dotenv()
@@ -23,6 +23,22 @@ CORS(app)
 # Ensure directories exist
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+import re
+
+def is_gibberish(text):
+    """Simple heuristic to detect gibberish strings like 'fghjkkjnbvfgh'."""
+    alpha_text = ''.join(filter(str.isalpha, text))
+    if not alpha_text:
+        return False
+    
+    if re.search(r'[^aeiouyAEIOUY]{6,}', alpha_text):
+        return True
+    
+    if not re.search(r'[aeiouyAEIOUY]', alpha_text):
+        return True
+        
+    return False
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -43,6 +59,8 @@ def index():
 
 @app.route('/analyze')
 def analyze():
+    if not session.get('user'):
+        return redirect('/register')
     return render_template('analyze.html')
 
 @app.route('/music')
@@ -90,6 +108,10 @@ def api_analyze_text():
     Expects JSON: { "text": "user input text" }
     Returns: { "emotion", "stress_level", "confidence" }
     """
+    user_session = session.get('user')
+    if not user_session:
+        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+
     data = request.get_json()
     if not data or 'text' not in data:
         return jsonify({'error': 'No text provided'}), 400
@@ -97,11 +119,14 @@ def api_analyze_text():
     text = data['text'].strip()
     if not text:
         return jsonify({'error': 'Text cannot be empty'}), 400
+        
+    if is_gibberish(text):
+        return jsonify({'error': 'invalid input please enter a valid input'}), 400
 
     result = analyze_text(text)
     
     # Log analysis result
-    log_analysis('text', text, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+    log_analysis(user_session.get('id'), 'text', text, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
     
     return jsonify(result)
 
@@ -113,6 +138,10 @@ def api_analyze_image():
     Expects: multipart form with 'image' file
     Returns: { "emotion", "stress_level", "confidence", "face_detected" }
     """
+    user_session = session.get('user')
+    if not user_session:
+        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+        
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
 
@@ -129,7 +158,7 @@ def api_analyze_image():
         
         # Log analysis result
         if result.get('face_detected'):
-            log_analysis('image', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+            log_analysis(user_session.get('id'), 'image', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
             
         return jsonify(result)
     finally:
@@ -215,7 +244,7 @@ def api_login():
         return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
 
     role = user.get('role', 'user')
-    session['user'] = {'name': user['username'], 'email': user['email'], 'role': role}
+    session['user'] = {'id': user['id'], 'name': user['username'], 'email': user['email'], 'role': role}
     return jsonify({
         'success': True,
         'message': 'Login successful!',
@@ -265,14 +294,19 @@ def api_admin_stats():
     
     stats = get_stats()
     
-    # User counts from Supabase
-    supabase = get_db_connection()
+    # User counts from REST API
+    import requests
+    from database import URL, get_rest_headers
     
-    total_users_resp = supabase.table('users').select('*', count='exact').execute()
-    total_users = total_users_resp.count if total_users_resp.count is not None else 0
-    
-    admin_users_resp = supabase.table('users').select('*', count='exact').eq('role', 'admin').execute()
-    admin_users = admin_users_resp.count if admin_users_resp.count is not None else 0
+    url_users = f"{URL}/rest/v1/users?select=role"
+    try:
+        resp = requests.get(url_users, headers=get_rest_headers())
+        users_data = resp.json() if resp.status_code == 200 else []
+    except:
+        users_data = []
+        
+    total_users = len(users_data)
+    admin_users = sum(1 for u in users_data if u.get('role') == 'admin')
 
     stats['user_counts'] = {
         'total': total_users,

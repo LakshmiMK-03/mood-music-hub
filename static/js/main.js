@@ -53,6 +53,11 @@ function analyzeEmotion() {
             .then(res => res.json())
             .then(data => {
                 if (loading) loading.style.display = 'none';
+                if (data.error) {
+                    alert(data.error);
+                    if (data.redirect) window.location.href = data.redirect;
+                    return;
+                }
                 displayResults(data);
             })
             .catch(err => {
@@ -81,6 +86,11 @@ function analyzeEmotion() {
             .then(res => res.json())
             .then(data => {
                 if (loading) loading.style.display = 'none';
+                if (data.error) {
+                    alert(data.error);
+                    if (data.redirect) window.location.href = data.redirect;
+                    return;
+                }
                 displayResults(data);
             })
             .catch(err => {
@@ -103,14 +113,12 @@ function displayResults(data) {
 
     const emotion = data.emotion || 'Neutral';
     const stress = data.stress_level || 'Low';
-    const confidence = data.confidence || 70;
 
     document.getElementById('result-emotion').textContent = emotion;
     document.getElementById('result-emoji').textContent = emojis[emotion] || '😐';
     document.getElementById('result-stress').textContent = stress;
     document.getElementById('result-stress-icon').textContent =
         stress === "Low" ? "🟢" : stress === "Medium" ? "🟡" : "🔴";
-    document.getElementById('result-confidence').textContent = confidence + "%";
 
     result.style.display = 'block';
 
@@ -181,6 +189,11 @@ function toggleRecording() {
                 .then(res => res.json())
                 .then(data => {
                     if (loading) loading.style.display = 'none';
+                    if (data.error) {
+                        alert(data.error);
+                        if (data.redirect) window.location.href = data.redirect;
+                        return;
+                    }
                     displayResults(data);
                 })
                 .catch(err => {

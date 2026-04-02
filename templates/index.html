@@ -15,7 +15,11 @@
             recommendations and relaxation tips.</p>
 
         <div class="hero-actions">
+            {% if session.get('user') %}
+            <a href="/analyze" class="btn btn-primary">
+            {% else %}
             <a href="/register" class="btn btn-primary">
+            {% endif %}
                 <i data-lucide="activity" style="margin-right: 0.5rem; width: 18px;"></i>
                 Start Emotion Analysis
             </a>

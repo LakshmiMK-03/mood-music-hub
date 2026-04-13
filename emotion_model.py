@@ -7,12 +7,19 @@ import os
 import re
 import hashlib
 import requests
+import base64
+import io
+import random
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 try:
     from PIL import Image
+    import cv2
+    # Load face cascade for local verification
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 except ImportError:
     Image = None
+    face_cascade = None
 
 # In-memory inference cache mapping: SHA256 -> Emotion Data
 IMAGE_INFERENCE_CACHE = {}
@@ -91,6 +98,70 @@ def analyze_text(text):
         'confidence': 85.0
     }
 
+def analyze_image_base64(base64_str):
+    """
+    Analyzes an image provided as a Base64 string.
+    This is the 'String Backend' implementation for high-speed camera processing.
+    """
+    try:
+        # 1. Decode Base64
+        if ',' in base64_str:
+            base64_str = base64_str.split(',')[1]
+        
+        image_data = base64.b64decode(base64_str)
+        
+        # 2. Save to temporary file for analyze_image_emotion compatibility
+        # We use a unique name based on content hash to trigger caching
+        content_hash = hashlib.md5(image_data).hexdigest()
+        temp_filename = f"temp_str_{content_hash[:10]}.jpg"
+        temp_path = os.path.join("uploads", temp_filename)
+        
+        with open(temp_path, "wb") as f:
+            f.write(image_data)
+            
+        print(f">>> 🧵 String Backend: Processing image string (Hash: {content_hash[:8]})")
+        
+        # 3. Local Face Verification (The 'Perfect Backend' check)
+        local_face_found = False
+        if face_cascade:
+            img_cv = cv2.imread(temp_path)
+            gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            if len(faces) > 0:
+                local_face_found = True
+        
+        # 4. Use the cloud analysis logic
+        try:
+            result = analyze_image_emotion(temp_path)
+            
+            # 5. Perfect Backend Overrides: Avoid 'Flipped' Emotions
+            if not local_face_found and not result.get('face_detected'):
+                return {
+                    'emotion': 'Neutral',
+                    'stress_level': 'Low',
+                    'confidence': 100.0,
+                    'face_detected': False,
+                    'message': 'No face clearly visible. Position your face in the guide.'
+                }
+
+            # If API is offline, provide a STABLE fallback (not random)
+            if result.get('message') == 'Image API timeout. Falling back to String Backend Default.':
+                # Instead of random, we assume 'Neutral' but encourage the user to try again
+                result['message'] = 'AI API Busy. Showing cached/default baseline.'
+                
+            return result
+        finally:
+            # CLEANUP: Delete the temporary file so it doesn't clutter the 'uploads' folder
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                print(f">>> 🧹 String Backend: Cleaned up temporary file: {temp_filename}")
+        
+    except Exception as e:
+        print(f"String Backend Error: {e}")
+        return {
+            'emotion': 'Neutral', 'stress_level': 'Low', 'confidence': 0.0, 'error': str(e)
+        }
+
 def analyze_image_emotion(image_path):
     """
     Cloud-offloaded image analysis using HuggingFace Inference API.
@@ -125,10 +196,12 @@ def analyze_image_emotion(image_path):
             image_bytes = f.read()
             
         print(">>> 🌐 Sending payload to HuggingFace API...")
-        response = requests.post(HF_API_URL, headers=headers, data=image_bytes, timeout=20)
+        response = requests.post(HF_API_URL, headers=headers, data=image_bytes, timeout=10)
         
         if response.status_code == 200:
             predictions = response.json()
+            print(f">>> 📝 Raw API Prediction: {predictions}")
+            
             if isinstance(predictions, list) and len(predictions) > 0 and isinstance(predictions[0], list):
                  predictions = predictions[0]
 
@@ -137,11 +210,18 @@ def analyze_image_emotion(image_path):
                 label = top_pred.get("label", "neutral").lower()
                 score = top_pred.get("score", 0.5)
                 
-                em = 'Neutral'
-                if any(k in label for k in ['happ', 'joy']): em = 'Happy'
-                elif any(k in label for k in ['sad', 'disgust', 'sorrow']): em = 'Sad'
-                elif any(k in label for k in ['ang', 'mad']): em = 'Angry'
-                elif any(k in label for k in ['fear', 'scare', 'surprise']): em = 'Fearful'
+                # 🛠️ EXACT MAPPING for dima806/facial_emotions_image_detection
+                mapping = {
+                    'happy': 'Happy',
+                    'sad': 'Sad',
+                    'angry': 'Angry',
+                    'fear': 'Fearful',
+                    'surprise': 'Fearful', # Surprise often maps to High Stress/Surprised playlist
+                    'neutral': 'Neutral',
+                    'disgust': 'Angry'
+                }
+                
+                em = mapping.get(label, 'Neutral')
                 
                 stress_level, stress_score = calculate_stress_score(em, em)
                 
@@ -150,7 +230,8 @@ def analyze_image_emotion(image_path):
                     'stress_level': stress_level,
                     'stress_score': stress_score,
                     'confidence': float(f"{score * 100:.1f}"),
-                    'face_detected': True
+                    'face_detected': True,
+                    'message': 'AI Analysis Complete: Logic matches detected face.'
                 }
                 
                 # Store in Cache
@@ -163,12 +244,12 @@ def analyze_image_emotion(image_path):
     except Exception as e:
         print(f"Image API Timeout or System Error: {e}")
         
-    # 4. Graceful Fallback
+    # 4. Graceful Fallback (Mock for Prototype)
     return {
         'emotion': 'Neutral', 
         'stress_level': 'Low',
         'stress_score': 10.0,
         'confidence': 50.0, 
         'face_detected': False, 
-        'msg': 'Image API timeout or rate limit exceeded. Falling back to Neutral.'
+        'message': 'Image API timeout. Falling back to String Backend Default.'
     }

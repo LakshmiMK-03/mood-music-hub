@@ -22,6 +22,11 @@ function switchTab(tabId) {
 
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
     document.getElementById(`${tabId}-tab`).classList.add('active');
+
+    // Stop camera if leaving image tab
+    if (tabId !== 'image') {
+        stopCamera();
+    }
 }
 
 
@@ -228,7 +233,121 @@ function toggleRecording() {
 }
 
 
-// ===== Image Input =====
+// ===== Image Input & Camera =====
+let isCameraMode = false;
+let stream = null;
+
+function setCameraMode(isCamera) {
+    isCameraMode = isCamera;
+    const uploadContainer = document.getElementById('upload-container');
+    const cameraContainer = document.getElementById('camera-container');
+    const analyzeBtnContainer = document.getElementById('analyze-btn-container');
+    const uploadBtn = document.getElementById('mode-upload-btn');
+    const cameraBtn = document.getElementById('mode-camera-btn');
+
+    if (isCamera) {
+        uploadContainer.style.display = 'none';
+        cameraContainer.style.display = 'block';
+        analyzeBtnContainer.style.display = 'none';
+        uploadBtn.classList.remove('active');
+        cameraBtn.classList.add('active');
+    } else {
+        uploadContainer.style.display = 'block';
+        cameraContainer.style.display = 'none';
+        analyzeBtnContainer.style.display = 'block';
+        uploadBtn.classList.add('active');
+        cameraBtn.classList.remove('active');
+        stopCamera();
+    }
+}
+
+async function startCamera() {
+    const video = document.getElementById('camera-feed');
+    const startBtn = document.getElementById('start-camera-btn');
+    const captureBtn = document.getElementById('capture-btn');
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "user" 
+            } 
+        });
+        video.srcObject = stream;
+        startBtn.innerHTML = '<i data-lucide="video-off" style="width: 16px; margin-right: 0.5rem;"></i> Stop Camera';
+        startBtn.onclick = stopCamera;
+        captureBtn.disabled = false;
+        if (window.lucide) lucide.createIcons();
+    } catch (err) {
+        console.error("Camera access error:", err);
+        alert("Could not access camera. Please ensure you have granted permissions.");
+    }
+}
+
+function stopCamera() {
+    const video = document.getElementById('camera-feed');
+    const startBtn = document.getElementById('start-camera-btn');
+    const captureBtn = document.getElementById('capture-btn');
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    
+    if (video) video.srcObject = null;
+    if (startBtn) {
+        startBtn.innerHTML = '<i data-lucide="camera" style="width: 16px; margin-right: 0.5rem;"></i> Start Camera';
+        startBtn.onclick = startCamera;
+    }
+    if (captureBtn) captureBtn.disabled = true;
+    if (window.lucide) lucide.createIcons();
+}
+
+function captureAndAnalyze() {
+    const video = document.getElementById('camera-feed');
+    const canvas = document.getElementById('camera-canvas');
+    const loading = document.getElementById('analysis-loading');
+    const result = document.getElementById('analysis-result');
+
+    if (!video || !canvas) return;
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw frame to canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Show loading
+    if (loading) loading.style.display = 'block';
+    if (result) result.style.display = 'none';
+
+    // String Backend: Get Base64 from canvas
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+    fetch('/api/analyze/image_string', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (loading) loading.style.display = 'none';
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            displayResults(data);
+        })
+        .catch(err => {
+            if (loading) loading.style.display = 'none';
+            console.error('Camera string analysis error:', err);
+            alert('Error analyzing camera frame.');
+        });
+}
+
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (file) {

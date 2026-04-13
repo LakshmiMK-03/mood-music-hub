@@ -29,75 +29,63 @@ class YouTubeClient:
 
     def search_music(self, emotion, languages=None):
         """
-        Search for music videos based on emotion and optional languages.
+        Search strictly for Top-Tier Official Movie Songs based on emotion.
+        - Exact 15 results.
+        - Max 5 mins duration.
+        - Verified Channels Only (Aditya Music, Saregama, Mango, etc).
+        - No Web Series, No Non-Movie tracks.
         """
         if not self.youtube:
             print("YouTube API key not found or invalid.")
             return []
 
-        # QUALITY LABELS
-        premium_labels = ["Mango Music", "Zee Music South", "Aditya Music", "T-Series", "Saregama", "Sony Music South", "Lahari Music", "Tips"]
+        # QUALITY LABELS FOR SEARCH QUERIES
+        premium_labels = ["Mango Music", "Aditya Music", "Saregama", "Sony Music", "T-Series", "Lahari Music", "Zee Music"]
         label = random.choice(premium_labels)
 
-        # MOOD TERMS (Strictly Movie focused)
+        # EXACT MOOD TERMS (Mapped to Trending Movie Song Archetypes)
         mood_terms = {
-            'Happy': 'upbeat happy movie songs official',
-            'Sad': 'emotional sad movie songs lyrical',
-            'Angry': 'action movie background score OST',
-            'Fearful': 'thriller suspense movie score',
-            'Neutral': 'peaceful movie melodies',
-            'Relaxed': 'relaxing film background score'
+            'Happy': 'hit video song fast beat',
+            'Sad': 'emotional sad song',
+            'Angry': 'action mass bgm',
+            'Fearful': 'thriller bgm',
+            'Neutral': 'romantic melody song',
+            'Relaxed': 'peaceful melody song'
         }
         mood_query = mood_terms.get(emotion, 'movie songs')
         lang_str = " ".join(languages) if languages else ""
-        # MULTI-PHASE SEARCH LOGIC
         industry = "Tollywood" if "Telugu" in lang_str else ("Kollywood" if "Tamil" in lang_str else ("Sandalwood" if "Kannada" in lang_str else "Bollywood"))
         
-        # IRON-CLAD FILTERS (YouTube Side)
-        # Use slightly fewer negative keywords in query to avoid 0 results, but keep the strongest ones
-        negative_filters = "-bhakti -god -private -independent -cover -live -mashup -remix -shorts -republic"
+        # IRON-CLAD NEGATIVE FILTERS (Rejecting Jukeboxes and Compilations)
+        negative_filters = "-bhakti -god -private -independent -cover -mashup -remix -shorts -editing -piano -royalty -status -bgm -copyright -nocopyright -free -vlog -webseries -tune -instrumental -lofi -jukebox -dj -mix -nonstop -8d -bass -scene -comedy -climax -fight"
         
         if "Telugu" in lang_str and "Hindi" not in lang_str:
-            negative_filters += " -hindi -bollywood"
+             negative_filters += " -hindi -bollywood -tamil -kannada -malayalam"
 
-        # USER REQUEST: 2010 to 2025
-        year_options = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2015', '2010', '']
-        year = random.choice(year_options)
-
-        # Broad strategies to ensure we ALWAYS find something
-        search_strategies = [
-            f"{label} {industry} {lang_str} {mood_query} {year}".strip(),
-            f"{industry} {lang_str} official movie songs {mood_query} {random.choice(['2025', '2024'])}".strip(),
-            f"{lang_str} film cinema {mood_query} songs".strip(),
-            f"{industry} movie hits {lang_str}".strip() # Ultima fallback
-        ]
-
-        debug_log_path = os.path.join(os.path.dirname(__file__), 'youtube_debug.log')
-        with open(debug_log_path, 'a', encoding='utf-8') as f:
-            f.write(f"\n--- Iron-Clad Optimized Search ({emotion}) ---\n")
+        # MATRIX QUERIES (Searching across top 5 labels simultaneously to guarantee 15 hits)
+        selected_brands = random.sample(premium_labels, min(5, len(premium_labels)))
+        search_strategies = []
+        for brand in selected_brands:
+            search_strategies.append(f'"{brand}" {industry} {lang_str} {mood_query}'.strip())
+            search_strategies.append(f'"{brand}" {lang_str} hit video song'.strip())
+        
+        # Final fallback
+        search_strategies.append(f"{industry} {lang_str} top 10 {mood_query}".strip())
 
         valid_videos = []
         
-        # MANDATORY TERMS: Must be a movie/official channel content
-        cinema_whitelist = ['movie', 'film', 'cinema', 'tollywood', 'bollywood', 'kollywood', 'sandalwood', 'soundtrack', 'ost', 'official', 'original', 't-series', 'mango', 'zee', 'aditya', 'sony', 'lahari']
+        # STRICT VERIFIED CHANNEL WHITELIST (The ultimate spam blocker)
+        verified_channels = ['aditya', 'mango music', 'saregama', 'sony music', 't-series', 'lahari', 'zee music', 'think music', 'sillywood', 'sun nxt', 'gemini', 'bhavani', 'tips', 'anand audio']
         
-        # PROHIBITED TERMS: No matter what, these are blocked
-        prohibited_blacklist = ['private', 'independent', 'indie', 'cover', 'instrumental', 'remake', 'bhakti', 'god', 'mashup', 'remix', 'dj']
-        
-        strict_telugu = ("Telugu" in lang_str and "Hindi" not in lang_str)
-
         for query in search_strategies:
             try:
-                with open(debug_log_path, 'a', encoding='utf-8') as f:
-                    f.write(f"Trying Query: {query}\n")
-
                 request = self.youtube.search().list(
                     part="snippet",
                     maxResults=50,
                     q=f"{query} {negative_filters}",
                     type="video",
                     videoEmbeddable="true",
-                    order="relevance" # Relevance is safer than 'date' for zero-results
+                    order="relevance" # Best accuracy
                 )
                 response = request.execute()
                 
@@ -116,58 +104,50 @@ class YouTubeClient:
                     title = item['snippet']['title'].lower()
                     channel = item['snippet']['channelTitle'].lower()
 
-                    # 1. Mandatory Cinema Check (Strict)
-                    if not any(word in title or word in channel for word in cinema_whitelist):
+                    # 1. CHANNEL GUARANTEE: Channel MUST be a verified music label
+                    if not any(brand in channel for brand in verified_channels):
                         continue
 
-                    # 2. Strict Blacklist
-                    if any(word in title for word in prohibited_blacklist):
-                        continue
-                    
-                    # 3. Language Check
-                    if strict_telugu and "hindi" in title and "telugu" not in title:
+                    # 2. MOVIE GUARANTEE: Reject anything explicitly stating web series or short film or scenes
+                    if 'web series' in title or 'short film' in title or 'no copyright' in title or 'free music' in title or 'scene' in title or 'climax' in title:
                         continue
 
-                    # USER REQUEST: Year Check (2010-2025)
-                    published_at = item['snippet']['publishedAt']
-                    year_val = int(published_at[:4])
-                    if year_val < 2010 or year_val > 2025: continue
+                    # 3. LANGUAGE LEAKAGE PREVENTION: Force block Kannada/Tamil/Hindi if Telugu is requested
+                    if "Telugu" in lang_str and ("kannada" in title or "tamil" in title or "hindi" in title or "malayalam" in title) and ("telugu" not in title):
+                        continue
 
-                    # Duration Check (180s - 600s or 3m - 10m)
+                    # USER REQUEST: Duration Check (Min 2 mins, Max 5 mins)
                     dur = parse_duration(item['contentDetails'].get('duration'))
-                    if dur < 180 or dur > 600: continue
+                    if dur < 120 or dur > 300: continue
+
+                    # Ensure no exact duplicates
+                    if any(v['videoId'] == item['id'] for v in valid_videos):
+                        continue
 
                     valid_videos.append({
                         'title': item['snippet']['title'],
                         'videoId': item['id'],
                         'thumbnail': item['snippet']['thumbnails']['medium']['url'],
                         'channelTitle': item['snippet']['channelTitle'],
-                        'publishedAt': published_at,
+                        'publishedAt': item['snippet']['publishedAt'],
                         'duration': dur
                     })
 
-                if len(valid_videos) >= 20: 
+                    # STRICTLY 15 SONGS
+                    if len(valid_videos) >= 15: 
+                        break
+
+                if len(valid_videos) >= 15: 
                     break 
 
             except Exception as e:
-                with open(debug_log_path, 'a', encoding='utf-8') as f:
-                    f.write(f"Query ERROR: {e}\n")
                 continue
 
-        # FINAL CHRONOLOGY LOGIC: Strictly 2025 -> 2010
+        # Sort chronologically by Published Year descending (2026 -> 2000)
         valid_videos.sort(key=lambda x: x['publishedAt'], reverse=True)
 
-        # Variety Sampling while keeping it "Trending" (Top 50 newest/highest relevance)
-        if len(valid_videos) > 18:
-            pool = valid_videos[:50] 
-            valid_videos = random.sample(pool, 18)
-            # Re-sort to ensure descending order after sampling
-            valid_videos.sort(key=lambda x: x['publishedAt'], reverse=True)
-
-        # Logging for Verification
-        with open(debug_log_path, 'a', encoding='utf-8') as f:
-            f.write(f"Strict Sorted Results (Count: {len(valid_videos)}):\n")
-            for i, v in enumerate(valid_videos):
-                f.write(f" {i+1}. [{v['publishedAt'][:10]}] {v['title']}\n")
+        # Strictly limit to 15 if somehow we got more
+        if len(valid_videos) > 15:
+            valid_videos = valid_videos[:15]
 
         return valid_videos

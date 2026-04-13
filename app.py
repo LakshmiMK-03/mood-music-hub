@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
 from flask_cors import CORS
-from emotion_model import analyze_text, analyze_image_emotion
+from emotion_model import analyze_text, analyze_image_emotion, analyze_image_base64
 from analytics import log_analysis, get_stats
 import os
 import json
@@ -165,6 +165,31 @@ def api_analyze_image():
         # Clean up
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@app.route('/api/analyze/image_string', methods=['POST'])
+def api_analyze_image_string():
+    """
+    Analyze Base64 image string for emotion.
+    Expects JSON: { "image": "data:image/jpeg;base64,..." }
+    """
+    user_session = session.get('user')
+    if not user_session:
+        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+        
+    data = request.get_json()
+    if not data or 'image' not in data:
+        return jsonify({'error': 'No image string provided'}), 400
+
+    try:
+        result = analyze_image_base64(data['image'])
+        
+        # Log analysis result
+        log_analysis(user_session.get('id'), 'image_camera', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+            
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/contact', methods=['POST'])
@@ -357,9 +382,9 @@ def api_admin_change_role():
 
 
 if __name__ == '__main__':
-    print(">>> FLASK SERVER STARTING ON PORT 5000")
+    print(">>> FLASK SERVER STARTING ON PORT 5001")
     try:
-        app.run(debug=False, port=5000, host='127.0.0.1')
+        app.run(debug=False, port=5001, host='127.0.0.1')
     except Exception as e:
         with open("init_error.log", "w") as f:
             f.write(str(e))

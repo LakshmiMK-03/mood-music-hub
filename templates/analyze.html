@@ -59,19 +59,49 @@
 
             <div id="image-tab" class="tab-content">
                 <div class="card p-6">
-                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Upload a face image</label>
-                    <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
-                        Image is processed using <strong>OpenCV</strong> for face detection and a <strong>Convolutional
-                            Neural Network (CNN)</strong> model for facial emotion recognition.
-                    </p>
-                    <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)"
-                        class="input-field" style="padding: 0.5rem;">
-                    <div id="image-preview" style="margin-top: 1rem; display: none;">
-                        <img id="preview-img" src="" alt="Preview"
-                            style="max-width: 200px; border-radius: 1rem; border: 2px solid var(--muted);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <label style="font-weight: 600;">Image Analysis</label>
+                        <div class="camera-toggle">
+                            <button onclick="setCameraMode(false)" id="mode-upload-btn" class="mode-btn active">Upload</button>
+                            <button onclick="setCameraMode(true)" id="mode-camera-btn" class="mode-btn">Live Camera</button>
+                        </div>
                     </div>
-                    <button onclick="analyzeEmotion()" class="btn btn-primary mt-4" style="width: 100%;" disabled
-                        id="image-analyze-btn">Detect Emotion</button>
+                    
+                    <div id="upload-container">
+                        <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
+                            Upload a face image for processing using <strong>OpenCV</strong> and <strong>CNN</strong> models.
+                        </p>
+                        <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)"
+                            class="input-field" style="padding: 0.5rem;">
+                        <div id="image-preview" style="margin-top: 1rem; display: none;">
+                            <img id="preview-img" src="" alt="Preview"
+                                style="max-width: 200px; border-radius: 1rem; border: 2px solid var(--muted);">
+                        </div>
+                    </div>
+
+                    <div id="camera-container" style="display: none;">
+                        <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
+                            Detect emotion in real-time. Please grant camera permissions when prompted.
+                        </p>
+                        <div class="video-wrapper">
+                            <video id="camera-feed" autoplay playsinline muted></video>
+                            <canvas id="camera-canvas" style="display: none;"></canvas>
+                            <div class="camera-overlay"></div>
+                        </div>
+                        <div id="camera-controls" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <button id="start-camera-btn" onclick="startCamera()" class="btn btn-outline" style="flex: 1;">
+                                <i data-lucide="camera" style="width: 16px; margin-right: 0.5rem;"></i> Start Camera
+                            </button>
+                            <button id="capture-btn" onclick="captureAndAnalyze()" class="btn btn-primary" style="flex: 1;" disabled>
+                                <i data-lucide="aperture" style="width: 16px; margin-right: 0.5rem;"></i> Capture & Analyze
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="analyze-btn-container">
+                        <button onclick="analyzeEmotion()" class="btn btn-primary mt-4" style="width: 100%;" disabled
+                            id="image-analyze-btn">Detect Emotion</button>
+                    </div>
                 </div>
             </div>
 

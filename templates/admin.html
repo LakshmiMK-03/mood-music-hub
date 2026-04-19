@@ -1057,7 +1057,12 @@
         }
 
         async function toggleRole(email, newRole) {
-            if (!confirm(`Change role to "${newRole}"?`)) return;
+            const confirmed = await showConfirm({
+                title: 'Change Role',
+                message: `Are you sure you want to change the role for ${email} to "${newRole}"?`,
+                type: 'info'
+            });
+            if (!confirmed) return;
             await fetch('/api/admin/users/role', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1067,7 +1072,12 @@
         }
 
         async function deleteUser(email) {
-            if (!confirm('Delete this user permanently?')) return;
+            const confirmed = await showConfirm({
+                title: 'Delete User',
+                message: `Are you sure you want to permanently delete ${email}? This action cannot be undone.`,
+                type: 'danger'
+            });
+            if (!confirmed) return;
             await fetch('/api/admin/users/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

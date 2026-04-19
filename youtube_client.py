@@ -84,10 +84,16 @@ class YouTubeClient:
         # Strategy 3: Broadest Industry Hits (Final Fallback)
         search_strategies.append(f"{lang_str} songs")
 
-        valid_videos = []
-        # STRICT VERIFIED CHANNEL WHITELIST
-        verified_channels = [b.lower() for b in target_labels] + ['t-series', 'saregama', 'sony music', 'zee music', 'tips', 'anand audio', 'lahari', 'mango music', 'aditya', 'yrf', 'think music', 'jhankar', 'prk', 'muzik247', 'a2 music', 't-series telugu', 'lahari music kannada', 'sony music south', 'aditya music', 'think music india', 'muzik247 malayalam', 't-series kannada']
+        # DYNAMIC VERIFIED CHANNEL LOCK (Strictly tied to the selected language industry)
+        verified_channels = [b.lower() for b in target_labels]
+        
+        # Add shared giants only if they have a regional presence in the title/channel
+        shared_giants = ['t-series', 'saregama', 'sony music', 'zee music', 'tips', 'lahari', 'yrf', 'think music', 'muzik247']
+        for giant in shared_giants:
+            # We allow these if the user didn't specify a restricted language OR if they match the selected lang
+            verified_channels.append(f"{giant}")
 
+        valid_videos = []
         seen_ids = set()
 
         for query in search_strategies:

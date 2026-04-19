@@ -44,6 +44,75 @@ window.showToast = function(message, type = 'info') {
 // Override default window.alert for consistent UX
 window.alert = (msg) => showToast(msg, 'info');
 
+/**
+ * Global Confirmation Modal
+ * Returns a Promise that resolves to true or false.
+ */
+window.showConfirm = function(options) {
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) return Promise.resolve(window.confirm(options.message || options));
+
+    const { 
+        title = 'Confirm Action', 
+        message = 'Are you sure?', 
+        confirmText = 'Confirm', 
+        cancelText = 'Cancel',
+        type = 'info' // 'info' or 'danger'
+    } = typeof options === 'string' ? { message: options } : options;
+
+    const titleEl = document.getElementById('confirm-title');
+    const messageEl = document.getElementById('confirm-message');
+    const okBtn = document.getElementById('confirm-ok');
+    const cancelBtn = document.getElementById('confirm-cancel');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    okBtn.textContent = confirmText;
+    cancelBtn.textContent = cancelText;
+
+    // Set variant class
+    const card = modal.querySelector('.modal-card');
+    card.className = `modal-card modal-${type}`;
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            modal.classList.remove('show');
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            setTimeout(() => {
+                modal.style.display = 'none';
+                resolve(result);
+            }, 300);
+        };
+
+        okBtn.onclick = () => cleanup(true);
+        cancelBtn.onclick = () => cleanup(false);
+
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    });
+};
+
+// Auto-hijack confirm data attributes
+document.addEventListener('click', async (e) => {
+    const confirmLink = e.target.closest('[data-confirm]');
+    if (confirmLink) {
+        e.preventDefault();
+        const message = confirmLink.getAttribute('data-confirm');
+        const isDanger = confirmLink.classList.contains('logout') || confirmLink.classList.contains('danger');
+        
+        const confirmed = await showConfirm({
+            title: isDanger ? 'Confirm Logout' : 'Confirmation',
+            message: message,
+            type: isDanger ? 'danger' : 'info'
+        });
+
+        if (confirmed) {
+            window.location.href = confirmLink.getAttribute('href');
+        }
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     console.info("[APP] Initializing Mood Music Hub...");
     if (window.lucide) lucide.createIcons();

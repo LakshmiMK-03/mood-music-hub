@@ -20,6 +20,25 @@
     <!-- Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-body">
+                <div class="modal-icon">
+                    <i data-lucide="help-circle"></i>
+                </div>
+                <div class="modal-content">
+                    <h3 id="confirm-title">Confirm Action</h3>
+                    <p id="confirm-message">Are you sure you want to proceed?</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-cancel" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                <button id="confirm-ok" class="btn btn-primary" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar">
         <div class="navbar-content" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; padding: 0 2rem; height: 4.5rem;">
             <!-- Left: Logo -->
@@ -43,14 +62,14 @@
                 {% if session.get('user') and session['user'].get('role') == 'admin' %}
                 <a href="/admin" class="btn btn-primary" style="padding: 0.5rem 1.25rem;"><i data-lucide="shield"
                         style="width:16px; margin-right:0.4rem;"></i> Admin</a>
-                <a href="/logout" class="btn btn-outline" style="padding: 0.5rem 1.25rem;"
-                   onclick="return confirm('Are you sure you want to logout?');"><i data-lucide="log-out"
+                <a href="/logout" class="btn btn-outline logout" style="padding: 0.5rem 1.25rem;"
+                   data-confirm="Are you sure you want to logout?"><i data-lucide="log-out"
                         style="width:16px; margin-right:0.4rem;"></i> Logout</a>
                 {% elif session.get('user') %}
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <span style="font-size: 0.95rem; color: var(--muted-foreground); font-weight: 500;">Hi, {{ session['user']['name'] }}</span>
-                    <a href="/logout" class="btn btn-outline" style="padding: 0.6rem 1.5rem; border-radius: 12px; background: white; border: 1px solid #e2e8f0; font-weight: 600;"
-                       onclick="return confirm('Are you sure you want to logout?');">
+                    <a href="/logout" class="btn btn-outline logout" style="padding: 0.6rem 1.5rem; border-radius: 12px; background: white; border: 1px solid #e2e8f0; font-weight: 600;"
+                       data-confirm="Are you sure you want to logout?">
                        <i data-lucide="log-out" style="width:18px; margin-right:0.5rem; vertical-align: middle;"></i> Logout
                     </a>
                 </div>

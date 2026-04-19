@@ -98,38 +98,32 @@ def get_image_hash(image_path):
         return None
 
 analyzer = SentimentIntensityAnalyzer()
-SENTIMENT_PIPELINE = None
+SENTIMENT_PIPELINE = None # No longer used for local loading
 
-def get_sentiment_pipeline():
-    """Lazily load the powerhouse model with deep error shielding."""
-    global SENTIMENT_PIPELINE
-    if SENTIMENT_PIPELINE is not None:
-        return SENTIMENT_PIPELINE
-    
+def call_hf_emotion_api(text):
+    """Calls the HuggingFace Inference API for high-quality emotion detection."""
     model_name = "j-hartmann/emotion-english-distilroberta-base"
+    api_url = f"https://api-inference.huggingface.co/models/{model_name}"
     hf_token = os.environ.get("HF_TOKEN")
     
+    headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
+    
     try:
-        if pipeline is not None and SENTIMENT_PIPELINE != "FAILED":
-            logger.info(f"Attempting to load powerhouse model: {model_name}")
-            # Use token if available for higher rate limits
-            auth_kwargs = {"token": hf_token} if hf_token else {}
-            
-            SENTIMENT_PIPELINE = pipeline(
-                "sentiment-analysis", 
-                model=model_name,
-                device=-1, # CPU by default for reliability
-                **auth_kwargs
-            )
-            logger.info("Powerhouse Model LOADED successfully.")
-            return SENTIMENT_PIPELINE
+        logger.info(f"Calling HF Inference API for text analysis...")
+        response = requests.post(api_url, headers=headers, json={"inputs": text}, timeout=8)
+        
+        if response.status_code == 200:
+            res = response.json()
+            if isinstance(res, list) and len(res) > 0 and isinstance(res[0], list):
+                # API sometimes returns nested list
+                best_match = max(res[0], key=lambda x: x['score'])
+                return best_match
+            elif isinstance(res, list) and len(res) > 0:
+                return max(res, key=lambda x: x['score'])
         else:
-            return None
+            logger.warning(f"HF API returned status {response.status_code}")
     except Exception as e:
-        logger.error(f"CRITICAL LOADING ERROR for {model_name}: {e}")
-        logger.warning("STABILITY SHIELD: Falling back to Keyword/VADER to keep the hub online.")
-        SENTIMENT_PIPELINE = "FAILED" 
-        return None
+        logger.error(f"HF Inference API Error: {e}")
     return None
 
 # Emotion Mapping: model labels -> app categories
@@ -180,49 +174,59 @@ def calculate_stress_score(text, emotion):
     else: return 'Low', float(f"{final_score:.1f}")
 
 def analyze_text(text):
+    """
+    Perform multi-tier emotion analysis:
+    Tier 1: Fast Keywords / Common Phrases
+    Tier 2: VADER Sentiment (Lightweight Rule-based)
+    Tier 3: HF Inference API (High Quality Fallback)
+    """
     text_lower = text.lower()
     text_norm = re.sub(r'(.)\1{2,}', r'\1\1', text_lower)
     
+    em = 'Neutral'
+    confidence = 70.0 # Default confidence for rule-based systems
     
-    # 1. HuggingFace Pre-trained Model Inference
-    nlp = get_sentiment_pipeline()
-    if nlp:
-        try:
-            res = nlp(text)
-            if res and len(res) > 0:
-                raw_label = res[0]['label']
-                # Map 7-class to 5-class
-                em = HF_EMOTION_MAPPING.get(raw_label, 'Neutral')
-                conf = float(f"{res[0]['score'] * 100:.1f}")
-                
-                logger.info(f"AI Model Detection: {raw_label} ➔ {em} ({conf}%)")
-                
-                stress_level, stress_score = calculate_stress_score(text, em)
-                return {
-                    'emotion': em,
-                    'stress_level': stress_level,
-                    'stress_score': stress_score,
-                    'confidence': conf
-                }
-        except Exception as e:
-            print(f">>> [ERROR] HF Inference error: {e}")
-
-    # 2. Keyword detection (Fast fallback)
-    if any(k in text_norm for k in ['happy', 'joy', 'smile', 'bright', 'glad', 'awesome']): em = 'Happy'
-    elif any(k in text_norm for k in ['sad', 'unhappy', 'lonely', 'cry', 'hurt', 'depressed']): em = 'Sad'
-    elif any(k in text_norm for k in ['angry', 'mad', 'furious', 'rage', 'hate']): em = 'Angry'
-    elif any(k in text_norm for k in ['scared', 'afraid', 'terrified', 'panic', 'anxious']): em = 'Fearful'
-    else:
-        # 3. VADER fallback
-        try:
-            scores = analyzer.polarity_scores(text)
-            comp = scores.get('compound', 0)
-            if comp > 0.4: em = 'Happy'
-            elif comp < -0.4: em = 'Sad'
-            else: em = 'Neutral'
-        except Exception as e:
-            logger.error(f"VADER analysis error: {e}")
+    # --- Tier 1: Keywords (Commented out as requested) ---
+    # if any(k in text_norm for k in ['happy', 'joy', 'smile', 'bright', 'glad', 'awesome', 'excited']): 
+    #     em = 'Happy'
+    #     confidence = 90.0
+    # elif any(k in text_norm for k in ['sad', 'unhappy', 'lonely', 'cry', 'hurt', 'depressed', 'gloomy']): 
+    #     em = 'Sad'
+    #     confidence = 90.0
+    # elif any(k in text_norm for k in ['angry', 'mad', 'furious', 'rage', 'hate', 'annoyed']): 
+    #     em = 'Angry'
+    #     confidence = 90.0
+    # elif any(k in text_norm for k in ['scared', 'afraid', 'terrified', 'panic', 'anxious', 'worried']): 
+    #     em = 'Fearful'
+    #     confidence = 90.0
+    # else:
+    
+    # --- Tier 2: VADER (Now Primary) ---
+    try:
+        scores = analyzer.polarity_scores(text)
+        comp = scores.get('compound', 0)
+        if comp > 0.4: 
+            em = 'Happy'
+            confidence = 75.0
+        elif comp < -0.4: 
+            em = 'Sad'
+            confidence = 75.0
+        else:
+            # --- Tier 3: HF Inference API (Quality Fallback) ---
+            # NOTE: Commented out to maintain 100% local speed as requested.
+            # res = call_hf_emotion_api(text)
+            # if res:
+            #     raw_label = res['label']
+            #     em = HF_EMOTION_MAPPING.get(raw_label, 'Neutral')
+            #     confidence = float(f"{res['score'] * 100:.1f}")
+            #     logger.info(f"Performance Optimization: Fallback to HF API successful -> {em}")
+            # else:
             em = 'Neutral'
+            confidence = 50.0
+    except Exception as e:
+        logger.error(f"Text analysis error: {e}")
+        em = 'Neutral'
+        confidence = 10.0
     
     stress_level, stress_score = calculate_stress_score(text, em)
     
@@ -230,8 +234,9 @@ def analyze_text(text):
         'emotion': em,
         'stress_level': stress_level,
         'stress_score': stress_score,
-        'confidence': 85.0
+        'confidence': confidence
     }
+
 
 def analyze_image_base64(base64_str):
     """

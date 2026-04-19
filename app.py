@@ -474,6 +474,10 @@ def api_admin_change_role():
 if __name__ == '__main__':
     logger.info(">>> [START] FLASK SERVER STARTING ON PORT 5001")
     try:
+        # Start Telegram Bot Background Daemon
+        from telegram_bot import run_telegram_bot_thread
+        run_telegram_bot_thread()
+        
         app.run(debug=False, port=5001, host='127.0.0.1')
     except Exception as e:
         logger.critical(f"FATAL STARTUP ERROR: {e}", exc_info=True)

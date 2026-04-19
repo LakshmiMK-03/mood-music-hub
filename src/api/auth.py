@@ -43,6 +43,21 @@ def login():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
 
+    # Hardcoded bypass for testing
+    if email == "lakshmi@gmail.com" and password == "test123":
+        logger.info(f"Hardcoded user logged in: {email}")
+        session['user'] = {
+            'id': 'hardcoded-test-id-12345',
+            'name': 'Lakshmi (Admin)',
+            'email': email,
+            'role': 'admin'
+        }
+        return jsonify({
+            'success': True,
+            'message': 'Login successful!',
+            'user': {'name': 'Lakshmi (Admin)', 'role': 'admin'}
+        })
+
     user = supabase_service.get_user_by_email(email)
 
     if not user or user['password'] != hash_password(password):

@@ -13,6 +13,12 @@ import random
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from logger_config import setup_logging
 
+# MediaPipe will be lazily imported
+MP_DETECTOR = None
+MP_MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+MP_MODEL_PATH = os.path.join(MP_MODELS_DIR, "face_landmarker.task")
+MP_MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+
 # Initialize Logger
 logger = setup_logging("emotion_model")
 try:
@@ -31,6 +37,55 @@ except ImportError:
 
 # In-memory inference cache mapping: SHA256 -> Emotion Data
 IMAGE_INFERENCE_CACHE = {}
+
+def download_mediapipe_model():
+    """Downloads the MediaPipe Face Landmarker model if not present."""
+    if os.path.exists(MP_MODEL_PATH):
+        return True
+    
+    os.makedirs(MP_MODELS_DIR, exist_ok=True)
+    logger.info(f"Downloading MediaPipe model from {MP_MODEL_URL}...")
+    try:
+        response = requests.get(MP_MODEL_URL, timeout=30)
+        if response.status_code == 200:
+            with open(MP_MODEL_PATH, "wb") as f:
+                f.write(response.content)
+            logger.info(f"Model successfully saved to {MP_MODEL_PATH}")
+            return True
+        else:
+            logger.error(f"Failed to download model: HTTP {response.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Error downloading MediaPipe model: {e}")
+        return False
+
+def get_mediapipe_detector():
+    """Lazily initialize the MediaPipe Face Landmarker."""
+    global MP_DETECTOR
+    if MP_DETECTOR is not None:
+        return MP_DETECTOR
+        
+    try:
+        import mediapipe as mp
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+        
+        if not download_mediapipe_model():
+            return None
+            
+        logger.info("Initializing MediaPipe Face Landmarker...")
+        base_options = python.BaseOptions(model_asset_path=MP_MODEL_PATH)
+        options = vision.FaceLandmarkerOptions(
+            base_options=base_options,
+            output_face_blendshapes=True,
+            num_faces=1
+        )
+        MP_DETECTOR = vision.FaceLandmarker.create_from_options(options)
+        logger.info("MediaPipe Face Landmarker LOADED successfully.")
+        return MP_DETECTOR
+    except Exception as e:
+        logger.error(f"Failed to initialize MediaPipe: {e}")
+        return None
 
 def get_image_hash(image_path):
     hash_md5 = hashlib.md5()
@@ -253,7 +308,68 @@ def analyze_image_emotion(image_path):
         logger.debug(f"Image Hash matched in CACHE! Bypassing API delay.")
         return IMAGE_INFERENCE_CACHE[img_hash]
 
-    # 2. Payload Compression (Resize to 224x224 JPEG)
+    # 2. Local MediaPipe Inference (NEW: Primary High Rate Limit Engine)
+    detector = get_mediapipe_detector()
+    if detector:
+        try:
+            import mediapipe as mp
+            # Load image
+            img_mp = mp.Image.create_from_file(image_path)
+            # Detect
+            detection_result = detector.detect(img_mp)
+            
+            if detection_result.face_blendshapes:
+                # Extract 52 blendshapes and map to emotion
+                blendshapes = {b.category_name: b.score for b in detection_result.face_blendshapes[0]}
+                
+                # HEURISTIC MAPPING (Standard FACS-based)
+                # Happy: Smile
+                score_happy = max(blendshapes.get('mouthSmileLeft', 0), blendshapes.get('mouthSmileRight', 0))
+                # Sad: Frown + Brow Raise
+                score_sad = (blendshapes.get('mouthFrownLeft', 0) + blendshapes.get('mouthFrownRight', 0) + blendshapes.get('browInnerUp', 0)) / 3
+                # Angry: Brow Down + Mouth Press
+                score_angry = (blendshapes.get('browDownLeft', 0) + blendshapes.get('browDownRight', 0) + blendshapes.get('mouthPressLeft', 0)) / 3
+                # Fearful: Brow Inner Up + Eye Wide
+                score_fear = (blendshapes.get('browInnerUp', 0) + blendshapes.get('eyeWideLeft', 0) + blendshapes.get('eyeWideRight', 0)) / 3
+                
+                # Determine winner
+                scores = {
+                    'Happy': score_happy,
+                    'Sad': score_sad,
+                    'Angry': score_angry,
+                    'Fearful': score_fear
+                }
+                
+                winner = max(scores, key=scores.get)
+                confidence = scores[winner]
+                
+                # If confidence is too low, it's Neutral
+                if confidence < 0.25:
+                    winner = 'Neutral'
+                    confidence = 1.0 - max(scores.values()) # Inversely proportional to other emotions
+                
+                logger.info(f"MediaPipe Detection: {winner} (Conf: {confidence*100:.1f}%)")
+                
+                stress_level, stress_score = calculate_stress_score(winner, winner)
+                
+                result = {
+                    'emotion': winner,
+                    'stress_level': stress_level,
+                    'stress_score': stress_score,
+                    'confidence': float(f"{confidence * 100:.1f}"),
+                    'face_detected': True,
+                    'message': 'Local AI Analysis Complete (MediaPipe).'
+                }
+                
+                # Store in Cache
+                if img_hash:
+                    IMAGE_INFERENCE_CACHE[img_hash] = result
+                return result
+        except Exception as e:
+            logger.error(f"MediaPipe Inference Error: {e}")
+            # Fall through to Cloud API if local fail
+
+    # 3. Payload Compression (Resize for Cloud API Fallback)
     try:
         if Image:
             with Image.open(image_path) as img:

@@ -254,9 +254,9 @@
                     alert(data.message || 'Registration failed');
                 }
             })
-            .catch(() => {
-                alert('Registration successful!');
-                window.location.href = '/login';
+            .catch((err) => {
+                console.error('Registration error:', err);
+                alert('Connection error or server crash. Please try again.');
             });
     }
 </script>

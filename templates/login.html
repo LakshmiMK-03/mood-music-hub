@@ -235,7 +235,10 @@
                 }
                 else { alert(data.message || 'Invalid credentials'); }
             })
-            .catch(() => { window.location.href = '/analyze'; });
+            .catch((err) => { 
+                console.error('Login error:', err);
+                alert('Connection error or server crash. Please try again.'); 
+            });
     }
 </script>
 {% endblock %}

@@ -46,6 +46,21 @@ def get_user_by_email(email):
         logger.error(f"Exception fetching user {email}: {e}", exc_info=True)
         return None
 
+def get_user_by_username(username):
+    """Retrieve a user by username from Supabase using REST API."""
+    try:
+        url = f"{URL}/rest/v1/users?username=eq.{username}"
+        response = requests.get(url, headers=get_rest_headers())
+        if response.status_code == 200:
+            data = response.json()
+            return data[0] if len(data) > 0 else None
+        else:
+            logger.error(f"Fetch Error for username {username}: {response.text}")
+            return None
+    except Exception as e:
+        logger.error(f"Exception fetching user {username}: {e}", exc_info=True)
+        return None
+
 def create_user(username, password, email, role='user'):
     """Insert a new user into Supabase using REST API."""
     try:

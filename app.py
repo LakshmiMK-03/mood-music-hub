@@ -14,7 +14,7 @@ logger = setup_logging("app")
 
 from database import (
     get_user_by_email, create_user, get_all_users, 
-    delete_user, update_user_role
+    delete_user, update_user_role, get_user_by_username
 )
 
 load_dotenv()
@@ -64,7 +64,7 @@ def index():
 @app.route('/analyze')
 def analyze():
     if not session.get('user'):
-        return redirect('/register')
+        return redirect('/login')
     return render_template('analyze.html')
 
 @app.route('/music')
@@ -114,7 +114,7 @@ def api_analyze_text():
     """
     user_session = session.get('user')
     if not user_session:
-        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+        return jsonify({'error': 'Please sign in to use the analyzer.', 'redirect': '/login'}), 401
 
     data = request.get_json()
     if not data or 'text' not in data:
@@ -147,7 +147,7 @@ def api_analyze_image():
     """
     user_session = session.get('user')
     if not user_session:
-        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+        return jsonify({'error': 'Please sign in to use the analyzer.', 'redirect': '/login'}), 401
         
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
@@ -183,7 +183,7 @@ def api_analyze_image_string():
     """
     user_session = session.get('user')
     if not user_session:
-        return jsonify({'error': 'Please register or log in to use the analyzer.', 'redirect': '/register'}), 401
+        return jsonify({'error': 'Please sign in to use the analyzer.', 'redirect': '/login'}), 401
         
     data = request.get_json()
     if not data or 'image' not in data:
@@ -249,6 +249,10 @@ def api_register():
     if get_user_by_email(email):
         return jsonify({'success': False, 'message': 'Email already registered'}), 400
 
+    # Check if username already exists
+    if get_user_by_username(name):
+        return jsonify({'success': False, 'message': 'Username already taken'}), 400
+
     # Create user (default role: user)
     success = create_user(name, hash_password(password), email, 'user')
     
@@ -274,6 +278,9 @@ def api_login():
 
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
+
+    from database import get_user_by_email
+    user = get_user_by_email(email)
 
     if not user or user['password'] != hash_password(password):
         logger.warning(f"Failed login attempt for email: {email}")

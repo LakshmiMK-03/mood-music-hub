@@ -248,15 +248,17 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert('Registration successful! Please login.');
-                    window.location.href = '/login';
+                    showToast('Registration successful! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
                 } else {
-                    alert(data.message || 'Registration failed');
+                    showToast(data.message || 'Registration failed', 'error');
                 }
             })
             .catch((err) => {
                 console.error('Registration error:', err);
-                alert('Connection error or server crash. Please try again.');
+                showToast('Connection error or server crash. Please try again.', 'error');
             });
     }
 </script>

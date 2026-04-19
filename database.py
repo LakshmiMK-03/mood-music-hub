@@ -46,6 +46,19 @@ def get_user_by_email(email):
         logger.error(f"Exception fetching user {email}: {e}", exc_info=True)
         return None
 
+def get_user_by_id(user_id):
+    """Retrieve a user by their primary key ID."""
+    try:
+        url = f"{URL}/rest/v1/users?id=eq.{user_id}"
+        response = requests.get(url, headers=get_rest_headers())
+        if response.status_code == 200:
+            data = response.json()
+            return data[0] if len(data) > 0 else None
+        return None
+    except Exception as e:
+        logger.error(f"Exception fetching user ID {user_id}: {e}")
+        return None
+
 def get_user_by_username(username):
     """Retrieve a user by username from Supabase using REST API."""
     try:
@@ -58,7 +71,7 @@ def get_user_by_username(username):
             logger.error(f"Fetch Error for username {username}: {response.text}")
             return None
     except Exception as e:
-        logger.error(f"Exception fetching user {username}: {e}", exc_info=True)
+        logger.error(f"Exception fetching user {username}: {e}")
         return None
 
 def create_user(username, password, email, role='user'):
@@ -85,13 +98,14 @@ def create_user(username, password, email, role='user'):
 def get_all_users():
     """Retrieve all users without passwords from Supabase REST API."""
     try:
-        url = f"{URL}/rest/v1/users?select=username,email,role"
+        # Standardize: Fetch ID along with other fields
+        url = f"{URL}/rest/v1/users?select=id,username,email,role,date_joined"
         response = requests.get(url, headers=get_rest_headers())
         if response.status_code == 200:
             return response.json()
         return []
     except Exception as e:
-        print(f"Error fetching all users: {e}")
+        logger.error(f"Error fetching all users: {e}")
         return []
 
 def delete_user(email):

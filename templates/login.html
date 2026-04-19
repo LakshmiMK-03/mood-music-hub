@@ -227,17 +227,20 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    if (data.user && data.user.role === 'admin') {
-                        window.location.href = '/admin';
-                    } else {
-                        window.location.href = '/analyze';
-                    }
+                    showToast('Welcome back!', 'success');
+                    setTimeout(() => {
+                        if (data.user && data.user.role === 'admin') {
+                            window.location.href = '/admin';
+                        } else {
+                            window.location.href = '/analyze';
+                        }
+                    }, 1000);
                 }
-                else { alert(data.message || 'Invalid credentials'); }
+                else { showToast(data.message || 'Invalid credentials', 'error'); }
             })
             .catch((err) => { 
                 console.error('Login error:', err);
-                alert('Connection error or server crash. Please try again.'); 
+                showToast('Connection error or server crash. Please try again.', 'error');
             });
     }
 </script>

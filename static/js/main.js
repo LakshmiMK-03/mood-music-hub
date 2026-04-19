@@ -1,7 +1,49 @@
-/* 
- * DOM Content Loaded Event Listener
- * Initializes the application, icons, and page-specific logic.
+/**
+ * Global Notification System (Toast)
+ * Replaces standard browser alerts with themed dialogs.
  */
+window.showToast = function(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    const iconMap = {
+        'success': 'check-circle',
+        'error': 'alert-circle',
+        'warning': 'alert-triangle',
+        'info': 'info'
+    };
+    const icon = iconMap[type] || 'info';
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i data-lucide="${icon}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    
+    // Initialize Lucide icons for the new toast
+    if (window.lucide) lucide.createIcons();
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
+};
+
+// Override default window.alert for consistent UX
+window.alert = (msg) => showToast(msg, 'info');
+
 document.addEventListener('DOMContentLoaded', () => {
     console.info("[APP] Initializing Mood Music Hub...");
     if (window.lucide) lucide.createIcons();

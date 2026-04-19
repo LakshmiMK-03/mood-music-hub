@@ -11,12 +11,23 @@
             </p>
         </div>
 
-        <div class="emotions-grid mb-10">
+        <div class="emotions-grid mb-4">
             <button onclick="selectEmotion('Happy')" class="emotion-btn active" data-emotion="Happy">😊 Happy</button>
             <button onclick="selectEmotion('Sad')" class="emotion-btn" data-emotion="Sad">😟 Sad</button>
             <button onclick="selectEmotion('Angry')" class="emotion-btn" data-emotion="Angry">😤 Angry</button>
             <button onclick="selectEmotion('Neutral')" class="emotion-btn" data-emotion="Neutral">😐 Neutral</button>
             <button onclick="selectEmotion('Fearful')" class="emotion-btn" data-emotion="Fearful">😨 Fearful</button>
+        </div>
+
+        <div class="language-filter-container mb-10">
+            <label for="music-lang-select" style="font-weight: 600; font-size: 0.9rem; color: var(--muted-foreground);">Regional Industry:</label>
+            <select id="music-lang-select" onchange="changeLanguage()" class="lang-select">
+                <option value="Hindi">Hindi (Bollywood)</option>
+                <option value="Kannada">Kannada (Sandalwood)</option>
+                <option value="Telugu">Telugu (Tollywood)</option>
+                <option value="Tamil">Tamil (Kollywood)</option>
+                <option value="Malayalam">Malayalam (Mollywood)</option>
+            </select>
         </div>
 
         <div class="music-layout">
@@ -218,8 +229,27 @@
         margin-bottom: 2.5rem;
     }
 
-    .overflow-hidden {
-        overflow: hidden;
+    .language-filter-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .lang-select {
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: white;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--primary);
+        outline: none;
+    }
+
+    .lang-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
 </style>
 <script src="https://www.youtube.com/iframe_api"></script>

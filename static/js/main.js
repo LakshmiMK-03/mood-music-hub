@@ -1,45 +1,72 @@
-// ===== DOM Ready =====
+/* 
+ * DOM Content Loaded Event Listener
+ * Initializes the application, icons, and page-specific logic.
+ */
 document.addEventListener('DOMContentLoaded', () => {
+    console.info("[APP] Initializing Mood Music Hub...");
     if (window.lucide) lucide.createIcons();
 
     // Initialize Music Page if present
     if (document.querySelector('.music-layout')) {
+        console.debug("[APP] Music layout detected, initializing localized settings.");
         const urlParams = new URLSearchParams(window.location.search);
         const emotion = urlParams.get('emotion') || 'Happy';
+        const languages = urlParams.get('languages');
 
-        // Highlight correct button
+        // Sync local dropdown if present
+        const langSelect = document.getElementById('music-lang-select');
+        if (langSelect && languages) {
+            langSelect.value = languages.split(',')[0];
+        }
+
+        // Highlight correct button AND filter visibility
         const btn = document.querySelector(`[data-emotion="${emotion}"]`);
-        if (btn) btn.click(); // This will call renderPlaylist(emotion)
-        else renderPlaylist(emotion);
+        if (btn) {
+            console.info(`[APP] Auto-selecting emotion: ${emotion}`);
+            btn.click(); 
+        } else {
+            selectEmotion(emotion);
+        }
     }
 });
 
 
-// ===== Tab Logic =====
+/* 
+ * Tab Switching Logic
+ * Handles visibility of content sections and camera cleanup.
+ */
 function switchTab(tabId) {
+    console.info(`[APP] Switching to tab: ${tabId}`);
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
     document.getElementById(`${tabId}-tab`).classList.add('active');
 
-    // Stop camera if leaving image tab
+    // Stop camera if leaving image tab to save resources
     if (tabId !== 'image') {
         stopCamera();
     }
 }
 
 
-// ===== Text Analysis — calls backend API =====
+/* 
+ * Main Emotion Analysis Wrapper
+ * Dispatches to text or image analysis based on active tab.
+ */
 function analyzeEmotion() {
     const loading = document.getElementById('analysis-loading');
     const result = document.getElementById('analysis-result');
 
     // Determine which tab is active
     const activeTab = document.querySelector('.tab-content.active');
-    if (!activeTab) return;
+    if (!activeTab) {
+        console.error("[APP] No active tab found for analysis.");
+        return;
+    }
 
     const tabId = activeTab.id;
+    console.info(`[APP] Starting analysis on tab: ${tabId}`);
 
     if (tabId === 'text-tab') {
         const text = document.getElementById('text-input').value.trim();
@@ -47,28 +74,42 @@ function analyzeEmotion() {
             alert('Please enter some text to analyze.');
             return;
         }
+        
         if (loading) loading.style.display = 'block';
         if (result) result.style.display = 'none';
 
+        // Perform Text Analysis Request
         fetch('/api/analyze/text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: text })
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(errData => {
+                        throw new Error(errData.error || `Server responded with ${res.status}`);
+                    }).catch(() => {
+                        throw new Error(`Server error: ${res.status}`);
+                    });
+                }
+                return res.json();
+            })
             .then(data => {
                 if (loading) loading.style.display = 'none';
                 if (data.error) {
+                    console.warn(`[APP] Text Analysis API returned error: ${data.error}`);
                     alert(data.error);
                     if (data.redirect) window.location.href = data.redirect;
                     return;
                 }
+                console.info(`[APP] Text Analysis Success: ${data.emotion}`);
                 displayResults(data);
             })
             .catch(err => {
                 if (loading) loading.style.display = 'none';
-                console.error('Analysis error:', err);
-                alert('Error analyzing text. Please try again.');
+                console.error('[APP] Detailed Analysis Error:', err);
+                const errorMsg = err.message || 'Error analyzing text.';
+                alert(`${errorMsg} Please try again.`);
             });
 
     } else if (tabId === 'image-tab') {
@@ -84,6 +125,7 @@ function analyzeEmotion() {
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
 
+        // Perform Image Analysis Request
         fetch('/api/analyze/image', {
             method: 'POST',
             body: formData
@@ -92,25 +134,32 @@ function analyzeEmotion() {
             .then(data => {
                 if (loading) loading.style.display = 'none';
                 if (data.error) {
+                    console.warn(`[APP] Image Analysis API returned error: ${data.error}`);
                     alert(data.error);
                     if (data.redirect) window.location.href = data.redirect;
                     return;
                 }
+                console.info(`[APP] Image Analysis Success: ${data.emotion}`);
                 displayResults(data);
             })
             .catch(err => {
                 if (loading) loading.style.display = 'none';
-                console.error('Image analysis error:', err);
+                console.error('[APP] Image analysis error:', err);
                 alert('Error analyzing image. Please try again.');
             });
     }
 }
 
 
+/* 
+ * UI Update: Display Analysis Results
+ * Updates the emoji, emotion text, and stress level on the page.
+ */
 function displayResults(data) {
     const result = document.getElementById('analysis-result');
     if (!result) return;
-
+    
+    console.debug("[APP] Rendering analysis results to UI.");
     const emojis = {
         Happy: "😊", Sad: "😟", Angry: "😤",
         Neutral: "😐", Fearful: "😨", Surprised: "😲"
@@ -148,7 +197,10 @@ function displayResults(data) {
 }
 
 
-// ===== Voice Input — Web Speech API =====
+/* 
+ * Voice Input Management
+ * Handles Web Speech API recording and transmission of transcript.
+ */
 let isRecording = false;
 let recognition = null;
 
@@ -157,6 +209,7 @@ function toggleRecording() {
     const status = document.getElementById('record-status');
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        console.warn("[APP] Speech Recognition not supported in this browser.");
         alert('Speech recognition is not supported in your browser. Please use Google Chrome.');
         return;
     }
@@ -233,12 +286,13 @@ function toggleRecording() {
 }
 
 
-// ===== Image Input & Camera =====
-let isCameraMode = false;
-let stream = null;
-
+/* 
+ * Camera & Image Mode Selection
+ * Toggles between file upload and live camera interface.
+ */
 function setCameraMode(isCamera) {
     isCameraMode = isCamera;
+    console.info(`[APP] Setting camera mode: ${isCamera}`);
     const uploadContainer = document.getElementById('upload-container');
     const cameraContainer = document.getElementById('camera-container');
     const analyzeBtnContainer = document.getElementById('analyze-btn-container');
@@ -261,7 +315,12 @@ function setCameraMode(isCamera) {
     }
 }
 
+/* 
+ * Start Live Camera Stream
+ * Requests media permissions and hooks stream to video element.
+ */
 async function startCamera() {
+    console.info("[APP] Requesting camera access...");
     const video = document.getElementById('camera-feed');
     const startBtn = document.getElementById('start-camera-btn');
     const captureBtn = document.getElementById('capture-btn');
@@ -275,12 +334,13 @@ async function startCamera() {
             } 
         });
         video.srcObject = stream;
+        console.info("[APP] Camera stream active.");
         startBtn.innerHTML = '<i data-lucide="video-off" style="width: 16px; margin-right: 0.5rem;"></i> Stop Camera';
         startBtn.onclick = stopCamera;
         captureBtn.disabled = false;
         if (window.lucide) lucide.createIcons();
     } catch (err) {
-        console.error("Camera access error:", err);
+        console.error("[APP] Camera access error:", err);
         alert("Could not access camera. Please ensure you have granted permissions.");
     }
 }
@@ -304,28 +364,35 @@ function stopCamera() {
     if (window.lucide) lucide.createIcons();
 }
 
+/* 
+ * Capture Frame & Analyze
+ * Grabs a frame from the video feed, converts to Base64, and sends to 'String Backend' API.
+ */
 function captureAndAnalyze() {
     const video = document.getElementById('camera-feed');
     const canvas = document.getElementById('camera-canvas');
     const loading = document.getElementById('analysis-loading');
     const result = document.getElementById('analysis-result');
 
-    if (!video || !canvas) return;
+    if (!video || !canvas) {
+        console.error("[APP] Camera elements missing, cannot capture frame.");
+        return;
+    }
 
-    // Set canvas dimensions to match video
+    // Set canvas dimensions to match video stream
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    // Draw frame to canvas
+    // Draw frame to canvas for processing
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Show loading
     if (loading) loading.style.display = 'block';
     if (result) result.style.display = 'none';
 
-    // String Backend: Get Base64 from canvas
+    // Get Base64 from canvas - high quality JPEG
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    console.info("[APP] Captured frame, sending to String Backend...");
 
     fetch('/api/analyze/image_string', {
         method: 'POST',
@@ -336,14 +403,16 @@ function captureAndAnalyze() {
         .then(data => {
             if (loading) loading.style.display = 'none';
             if (data.error) {
+                console.error(`[APP] String Backend Error: ${data.error}`);
                 alert(data.error);
                 return;
             }
+            console.info(`[APP] Capture Analysis Success: ${data.emotion}`);
             displayResults(data);
         })
         .catch(err => {
             if (loading) loading.style.display = 'none';
-            console.error('Camera string analysis error:', err);
+            console.error('[APP] Camera string analysis error:', err);
             alert('Error analyzing camera frame.');
         });
 }
@@ -395,17 +464,22 @@ function handleLangSelection(checkbox) {
     }
 }
 
+/* 
+ * Submit Language Selection
+ * Finalizes music preferences and redirects to the player.
+ */
 function submitLanguages() {
+    console.info("[APP] Submitting language and playback preferences.");
     const checked = document.querySelectorAll('input[name="language"]:checked');
     const languages = Array.from(checked).map(cb => cb.value);
 
     // Get selected playback format
     const format = document.querySelector('input[name="playback-format"]:checked')?.value || 'both';
 
-    // Get current emotion from result
+    // Get current emotion from result display
     const emotion = document.getElementById('result-emotion').textContent || 'Neutral';
 
-    // Build query params
+    // Build query params for redirection
     const params = new URLSearchParams();
     params.append('emotion', emotion);
     params.append('format', format);
@@ -413,8 +487,9 @@ function submitLanguages() {
         params.append('languages', languages.join(','));
     }
 
-    // Redirect
-    window.location.href = `/music?${params.toString()}`;
+    const redirectUrl = `/music?${params.toString()}`;
+    console.info(`[APP] Redirecting to music page: ${redirectUrl}`);
+    window.location.href = redirectUrl;
 }
 
 
@@ -449,14 +524,23 @@ function playSong(title, artist, videoId, shouldAutoplay = true) {
         const playIcon = document.getElementById('play-icon');
 
         if (format === 'audio') {
-            // Audio Only mode: Hide video wrapper, show default art
+            // Audio Only mode: Show default art, but keep player active at 1px height
+            // Using display:none often breaks YouTube API events like Error and Ended
             defaultArt.style.display = 'flex';
             defaultArt.style.background = 'var(--gradient-primary)';
-            wrapper.style.display = 'none';
+            wrapper.style.display = 'block';
+            wrapper.style.height = '1px';
+            wrapper.style.opacity = '0.01'; 
+            wrapper.style.pointerEvents = 'none'; // Don't let user click it
+            wrapper.style.marginBottom = '0';
         } else {
             // Video + Audio mode: Show video, hide default art
             defaultArt.style.display = 'none';
             wrapper.style.display = 'block';
+            wrapper.style.height = 'auto';
+            wrapper.style.opacity = '1';
+            wrapper.style.pointerEvents = 'auto';
+            wrapper.style.marginBottom = '1rem';
         }
 
         // If player exists, load new video
@@ -475,11 +559,15 @@ function playSong(title, artist, videoId, shouldAutoplay = true) {
                 videoId: videoId,
                 playerVars: {
                     'autoplay': shouldAutoplay ? 1 : 0,
-                    'playsinline': 1
+                    'playsinline': 1,
+                    'origin': window.location.origin
                 },
                 events: {
                     'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
+                    'onError': onPlayerError,
+                    'onReady': (event) => {
+                        if (shouldAutoplay) event.target.playVideo();
+                    }
                 }
             });
         }
@@ -496,6 +584,10 @@ function onPlayerStateChange(event) {
     const playIcon = document.getElementById('play-icon');
     if (event.data == YT.PlayerState.PLAYING) {
         if (playIcon) playIcon.setAttribute('data-lucide', 'pause');
+    } else if (event.data == YT.PlayerState.ENDED) {
+        // Automatically play the next song when current one ends
+        console.log("Track ended, playing next...");
+        playNext();
     } else {
         if (playIcon) playIcon.setAttribute('data-lucide', 'play');
     }
@@ -503,9 +595,20 @@ function onPlayerStateChange(event) {
 }
 
 function onPlayerError(event) {
-    console.warn("YouTube Player Error:", event.data);
-    // Error codes: 150/101 = restricted playback, 100 = video not found
-    // Auto-skip to next video
+    console.warn("YouTube Player Error Code:", event.data);
+    
+    // Error codes: 
+    // 150/101 = restricted playback (domain or owner restriction)
+    // 100 = video not found/removed
+    // 2/5 = invalid parameters/browser issues
+    
+    const trackName = currentVideos[currentIndex]?.title || "Current Track";
+    console.error(`Playback restricted for: "${trackName}". Skipping to next...`);
+    
+    // Optional: Show a small toast to the user if many tracks fail
+    // showToast(`Skipping restricted track...`);
+
+    // Auto-skip to next video to keep the music flowing
     playNext();
 }
 
@@ -536,31 +639,51 @@ function playPrevious() {
     }
 }
 
+function changeLanguage() {
+    const emotion = document.querySelector('.emotion-btn.active')?.dataset.emotion || 'Happy';
+    renderPlaylist(emotion);
+}
+
 
 
 function selectEmotion(emotion) {
     document.querySelectorAll('.emotion-btn[data-emotion]').forEach(btn => {
         if (btn.dataset.emotion === emotion) {
             btn.classList.add('active');
+            btn.style.display = 'inline-block'; // Show active
         } else {
             btn.classList.remove('active');
+            btn.style.display = 'none'; // Hide others
         }
     });
     renderPlaylist(emotion);
 }
 
+/* 
+ * Render Playlist
+ * Fetches recommendations from the API and updates the UI list.
+ */
 function renderPlaylist(emotion) {
+    console.info(`[APP] Fetching playlist recommendations for: ${emotion}`);
     document.getElementById('playlist-title').textContent = `${emotion} Recommendations`;
     document.getElementById('current-emotion-badge').textContent = `Emotion: ${emotion}`;
 
     const list = document.getElementById('playlist-tracks');
     list.innerHTML = '<p style="padding: 1rem; color: var(--muted-foreground);">Loading recommendations...</p>';
 
-    // Check for languages in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const langParam = urlParams.get('languages');
-    const languages = langParam ? langParam.split(',') : [];
+    // Priority 1: Check Local Dropdown
+    const langSelect = document.getElementById('music-lang-select');
+    let languages = [];
+    if (langSelect) {
+        languages = [langSelect.value];
+    } else {
+        // Priority 2: Check URL Params
+        const urlParams = new URLSearchParams(window.location.search);
+        const langParam = urlParams.get('languages');
+        languages = langParam ? langParam.split(',') : [];
+    }
 
+    // API Call to suggest songs
     fetch('/api/music/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -573,11 +696,13 @@ function renderPlaylist(emotion) {
         .then(data => {
             list.innerHTML = '';
             if (!data.videos || data.videos.length === 0) {
+                console.warn("[APP] No music recommendations returned from API.");
                 list.innerHTML = '<p style="padding: 1rem;">No recommendations found. Please try again.</p>';
                 return;
             }
 
-            // Store videos globally
+            console.info(`[APP] Received ${data.videos.length} recommendations.`);
+            // Store videos globally for sequential playback
             currentVideos = data.videos;
             currentIndex = 0;
 
@@ -591,7 +716,7 @@ function renderPlaylist(emotion) {
                 list.appendChild(div);
             });
 
-            // Handle "Show More" visibility (if more than 10)
+            // Handle "Show More" visibility
             const showMoreContainer = document.getElementById('show-more-container');
             if (currentVideos.length > 10) {
                 showMoreContainer.style.display = 'block';
@@ -599,7 +724,7 @@ function renderPlaylist(emotion) {
                 showMoreContainer.style.display = 'none';
             }
 
-            // Auto-load the first track
+            // Auto-load the first track without autoplaying immediately
             if (currentVideos.length > 0) {
                 const first = currentVideos[0];
                 playSong(first.title, first.channelTitle, first.videoId, false);
@@ -608,7 +733,7 @@ function renderPlaylist(emotion) {
             if (window.lucide) lucide.createIcons();
         })
         .catch(err => {
-            console.error('Music fetch error:', err);
+            console.error('[APP] Music fetch error:', err);
             list.innerHTML = '<p style="padding: 1rem; color: red;">Error loading music. Check API key.</p>';
         });
 }
@@ -658,31 +783,58 @@ function toggleBreathing() {
     if (breathInterval) {
         clearInterval(breathInterval);
         breathInterval = null;
-        btn.textContent = "Start Breathing";
+        btn.innerHTML = '<i data-lucide="play" style="width: 18px; margin-right: 0.5rem;"></i> Start Exercise';
         text.textContent = "Ready";
         circle.className = "breath-circle";
+        // Reset indicators
+        document.querySelectorAll('.phase-indicators span').forEach(s => s.classList.remove('active'));
+        if (window.lucide) lucide.createIcons();
         return;
     }
 
-    btn.textContent = "Stop";
+    btn.innerHTML = '<i data-lucide="square" style="width: 18px; margin-right: 0.5rem;"></i> Stop';
+    if (window.lucide) lucide.createIcons();
+    
     runBreathCycle();
-    breathInterval = setInterval(runBreathCycle, 12000);
+    breathInterval = setInterval(runBreathCycle, 12000); // 4 + 4 + 4 = 12s total
 }
 
 function runBreathCycle() {
     const circle = document.getElementById('breath-circle');
     const text = document.getElementById('breath-text');
+    const inhaleLabel = document.getElementById('label-inhale');
+    const holdLabel = document.getElementById('label-hold');
+    const exhaleLabel = document.getElementById('label-exhale');
 
-    // Inhale
+    if (!circle || !text) return;
+
+    // Reset status
+    const resetLabels = () => {
+        if (inhaleLabel) inhaleLabel.classList.remove('active');
+        if (holdLabel) holdLabel.classList.remove('active');
+        if (exhaleLabel) exhaleLabel.classList.remove('active');
+    };
+
+    // 1. INHALE (4s)
+    resetLabels();
+    if (inhaleLabel) inhaleLabel.classList.add('active');
     text.textContent = "Inhale";
     circle.className = "breath-circle inhale";
 
+    // 2. HOLD (4s)
     setTimeout(() => {
+        if (!breathInterval) return;
+        resetLabels();
+        if (holdLabel) holdLabel.classList.add('active');
         text.textContent = "Hold";
-        circle.className = "breath-circle inhale";
+        // Keep inhale class to maintain scale(1.4)
     }, 4000);
 
+    // 3. EXHALE (4s)
     setTimeout(() => {
+        if (!breathInterval) return;
+        resetLabels();
+        if (exhaleLabel) exhaleLabel.classList.add('active');
         text.textContent = "Exhale";
         circle.className = "breath-circle exhale";
     }, 8000);

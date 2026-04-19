@@ -2,6 +2,10 @@ import os
 import requests
 from datetime import datetime
 from database import URL, get_rest_headers
+from logger_config import setup_logging
+
+# Initialize Logger
+logger = setup_logging("analytics")
 
 def log_analysis(user_id, source, text, emotion, stress_level, confidence, stress_score):
     """
@@ -23,12 +27,12 @@ def log_analysis(user_id, source, text, emotion, stress_level, confidence, stres
         }
         
         url = f"{URL}/rest/v1/history"
-        response = requests.post(url, headers=get_rest_headers(), json=data)
+        response = requests.post(url, headers=get_rest_headers(), json=data, timeout=5)
         if response.status_code not in (201, 200, 204):
-            print(f"❌ Supabase REST Logging Error: {response.text}")
+            logger.error(f"Supabase REST Logging Error (User {user_id}): {response.text}")
             
     except Exception as e:
-        print(f"❌ Supabase Logging Exception: {e}")
+        logger.error(f"Supabase Logging Exception (User {user_id}): {e}")
 
 def get_stats():
     """
@@ -39,7 +43,7 @@ def get_stats():
         headers = get_rest_headers()
         
         # We can fetch all history for simple stats (or use RPC for heavy DBs)
-        response = requests.get(url_history, headers=headers)
+        response = requests.get(url_history, headers=headers, timeout=5)
         if response.status_code != 200:
             return {'error': f'Failed to fetch stats: {response.text}'}
             
@@ -63,7 +67,7 @@ def get_stats():
         # Recent Activity (last 5)
         # Using Supabase REST API query params for ordering and limits
         url_recent = f"{url_history}?order=id.desc&limit=5"
-        resp_recent = requests.get(url_recent, headers=headers)
+        resp_recent = requests.get(url_recent, headers=headers, timeout=5)
         recent = resp_recent.json() if resp_recent.status_code == 200 else []
         
         return {
@@ -73,5 +77,5 @@ def get_stats():
             'recent_activity': recent
         }
     except Exception as e:
-        print(f"❌ Supabase Stats Error: {e}")
+        logger.error(f"Supabase Stats Aggregation Error: {e}", exc_info=True)
         return {'error': str(e)}

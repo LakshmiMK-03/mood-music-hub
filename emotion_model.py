@@ -11,6 +11,14 @@ import base64
 import io
 import random
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from logger_config import setup_logging
+
+# Initialize Logger
+logger = setup_logging("emotion_model")
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
 
 try:
     from PIL import Image
@@ -35,6 +43,50 @@ def get_image_hash(image_path):
         return None
 
 analyzer = SentimentIntensityAnalyzer()
+SENTIMENT_PIPELINE = None
+
+def get_sentiment_pipeline():
+    """Lazily load the powerhouse model with deep error shielding."""
+    global SENTIMENT_PIPELINE
+    if SENTIMENT_PIPELINE is not None:
+        return SENTIMENT_PIPELINE
+    
+    model_name = "j-hartmann/emotion-english-distilroberta-base"
+    hf_token = os.environ.get("HF_TOKEN")
+    
+    try:
+        if pipeline is not None and SENTIMENT_PIPELINE != "FAILED":
+            logger.info(f"Attempting to load powerhouse model: {model_name}")
+            # Use token if available for higher rate limits
+            auth_kwargs = {"token": hf_token} if hf_token else {}
+            
+            SENTIMENT_PIPELINE = pipeline(
+                "sentiment-analysis", 
+                model=model_name,
+                device=-1, # CPU by default for reliability
+                **auth_kwargs
+            )
+            logger.info("Powerhouse Model LOADED successfully.")
+            return SENTIMENT_PIPELINE
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"CRITICAL LOADING ERROR for {model_name}: {e}")
+        logger.warning("STABILITY SHIELD: Falling back to Keyword/VADER to keep the hub online.")
+        SENTIMENT_PIPELINE = "FAILED" 
+        return None
+    return None
+
+# Emotion Mapping: model labels -> app categories
+HF_EMOTION_MAPPING = {
+    'joy': 'Happy',
+    'sadness': 'Sad',
+    'anger': 'Angry',
+    'disgust': 'Angry',
+    'fear': 'Fearful',
+    'surprise': 'Fearful',
+    'neutral': 'Neutral'
+}
 
 # Emotion labels
 EMOTIONS = ['Happy', 'Sad', 'Angry', 'Neutral', 'Fearful']
@@ -76,18 +128,46 @@ def analyze_text(text):
     text_lower = text.lower()
     text_norm = re.sub(r'(.)\1{2,}', r'\1\1', text_lower)
     
-    # Keyword detection
+    
+    # 1. HuggingFace Pre-trained Model Inference
+    nlp = get_sentiment_pipeline()
+    if nlp:
+        try:
+            res = nlp(text)
+            if res and len(res) > 0:
+                raw_label = res[0]['label']
+                # Map 7-class to 5-class
+                em = HF_EMOTION_MAPPING.get(raw_label, 'Neutral')
+                conf = float(f"{res[0]['score'] * 100:.1f}")
+                
+                logger.info(f"AI Model Detection: {raw_label} ➔ {em} ({conf}%)")
+                
+                stress_level, stress_score = calculate_stress_score(text, em)
+                return {
+                    'emotion': em,
+                    'stress_level': stress_level,
+                    'stress_score': stress_score,
+                    'confidence': conf
+                }
+        except Exception as e:
+            print(f">>> [ERROR] HF Inference error: {e}")
+
+    # 2. Keyword detection (Fast fallback)
     if any(k in text_norm for k in ['happy', 'joy', 'smile', 'bright', 'glad', 'awesome']): em = 'Happy'
     elif any(k in text_norm for k in ['sad', 'unhappy', 'lonely', 'cry', 'hurt', 'depressed']): em = 'Sad'
     elif any(k in text_norm for k in ['angry', 'mad', 'furious', 'rage', 'hate']): em = 'Angry'
     elif any(k in text_norm for k in ['scared', 'afraid', 'terrified', 'panic', 'anxious']): em = 'Fearful'
     else:
-        # VADER fallback
-        scores = analyzer.polarity_scores(text)
-        comp = scores['compound']
-        if comp > 0.4: em = 'Happy'
-        elif comp < -0.4: em = 'Sad'
-        else: em = 'Neutral'
+        # 3. VADER fallback
+        try:
+            scores = analyzer.polarity_scores(text)
+            comp = scores.get('compound', 0)
+            if comp > 0.4: em = 'Happy'
+            elif comp < -0.4: em = 'Sad'
+            else: em = 'Neutral'
+        except Exception as e:
+            logger.error(f"VADER analysis error: {e}")
+            em = 'Neutral'
     
     stress_level, stress_score = calculate_stress_score(text, em)
     
@@ -119,7 +199,7 @@ def analyze_image_base64(base64_str):
         with open(temp_path, "wb") as f:
             f.write(image_data)
             
-        print(f">>> 🧵 String Backend: Processing image string (Hash: {content_hash[:8]})")
+        logger.debug(f"String Backend: Processing image string (Hash: {content_hash[:8]})")
         
         # 3. Local Face Verification (The 'Perfect Backend' check)
         local_face_found = False
@@ -154,10 +234,10 @@ def analyze_image_base64(base64_str):
             # CLEANUP: Delete the temporary file so it doesn't clutter the 'uploads' folder
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-                print(f">>> 🧹 String Backend: Cleaned up temporary file: {temp_filename}")
+                logger.debug(f"String Backend: Cleaned up temporary file: {temp_filename}")
         
     except Exception as e:
-        print(f"String Backend Error: {e}")
+        logger.error(f"String Backend Error: {e}", exc_info=True)
         return {
             'emotion': 'Neutral', 'stress_level': 'Low', 'confidence': 0.0, 'error': str(e)
         }
@@ -170,7 +250,7 @@ def analyze_image_emotion(image_path):
     # 1. Cryptographic Memoization (Caching)
     img_hash = get_image_hash(image_path)
     if img_hash and img_hash in IMAGE_INFERENCE_CACHE:
-        print(f">>> ✅ Image Hash matched in CACHE! Bypassing API delay.")
+        logger.debug(f"Image Hash matched in CACHE! Bypassing API delay.")
         return IMAGE_INFERENCE_CACHE[img_hash]
 
     # 2. Payload Compression (Resize to 224x224 JPEG)
@@ -180,7 +260,7 @@ def analyze_image_emotion(image_path):
                 img = img.convert("RGB")
                 img = img.resize((224, 224), Image.LANCZOS)
                 img.save(image_path, "JPEG", quality=85)
-                print(">>> 📉 Image successfully shrunk to 224x224.")
+                logger.info("Image successfully shrunk to 224x224 for API payload efficiency.")
     except Exception as e:
         print(f"PIL Resize Error: {e}")
 
@@ -195,12 +275,12 @@ def analyze_image_emotion(image_path):
         with open(image_path, "rb") as f:
             image_bytes = f.read()
             
-        print(">>> 🌐 Sending payload to HuggingFace API...")
+        logger.info("Sending payload to HuggingFace Image Recognition API...")
         response = requests.post(HF_API_URL, headers=headers, data=image_bytes, timeout=10)
         
         if response.status_code == 200:
             predictions = response.json()
-            print(f">>> 📝 Raw API Prediction: {predictions}")
+            print(f">>> [API] Raw API Prediction: {predictions}")
             
             if isinstance(predictions, list) and len(predictions) > 0 and isinstance(predictions[0], list):
                  predictions = predictions[0]
@@ -210,7 +290,7 @@ def analyze_image_emotion(image_path):
                 label = top_pred.get("label", "neutral").lower()
                 score = top_pred.get("score", 0.5)
                 
-                # 🛠️ EXACT MAPPING for dima806/facial_emotions_image_detection
+                # [LOGIC] EXACT MAPPING for dima806/facial_emotions_image_detection
                 mapping = {
                     'happy': 'Happy',
                     'sad': 'Sad',
@@ -231,7 +311,7 @@ def analyze_image_emotion(image_path):
                     'stress_score': stress_score,
                     'confidence': float(f"{score * 100:.1f}"),
                     'face_detected': True,
-                    'message': 'AI Analysis Complete: Logic matches detected face.'
+                    'message': 'AI Analysis Complete.'
                 }
                 
                 # Store in Cache
@@ -240,9 +320,9 @@ def analyze_image_emotion(image_path):
                     
                 return result
         else:
-            print(f"HF API Error {response.status_code}: {response.text}")
+            logger.error(f"HF Image API Error {response.status_code}: {response.text}")
     except Exception as e:
-        print(f"Image API Timeout or System Error: {e}")
+        logger.warning(f"Image API Timeout or System Error: {e}")
         
     # 4. Graceful Fallback (Mock for Prototype)
     return {

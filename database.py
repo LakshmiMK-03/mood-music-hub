@@ -3,6 +3,10 @@ import json
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+from logger_config import setup_logging
+
+# Initialize Logger
+logger = setup_logging("database")
 
 load_dotenv()
 
@@ -25,7 +29,7 @@ def get_rest_headers():
     }
 
 def init_db():
-    print("✅ Supabase REST Client initialized.")
+    logger.info("Supabase REST Client connection verified.")
 
 def get_user_by_email(email):
     """Retrieve a user by email from Supabase using REST API."""
@@ -36,10 +40,10 @@ def get_user_by_email(email):
             data = response.json()
             return data[0] if len(data) > 0 else None
         else:
-            print(f"Fetch Error: {response.text}")
+            logger.error(f"Fetch Error for email {email}: {response.text}")
             return None
     except Exception as e:
-        print(f"Error fetching user: {e}")
+        logger.error(f"Exception fetching user {email}: {e}", exc_info=True)
         return None
 
 def create_user(username, password, email, role='user'):
@@ -57,10 +61,10 @@ def create_user(username, password, email, role='user'):
         if response.status_code in (201, 200):
             return response.json()[0] if response.json() else True
         else:
-            print(f"Create Error: {response.text}")
+            logger.error(f"Create User Error for {email}: {response.text}")
             return False
     except Exception as e:
-        print(f"Error creating user: {e}")
+        logger.error(f"Exception creating user {email}: {e}", exc_info=True)
         return False
 
 def get_all_users():

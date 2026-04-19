@@ -7,6 +7,10 @@ import json
 import hashlib
 from dotenv import load_dotenv
 from youtube_client import YouTubeClient
+from logger_config import setup_logging
+
+# Initialize Logger
+logger = setup_logging("app")
 
 from database import (
     get_user_by_email, create_user, get_all_users, 
@@ -128,6 +132,9 @@ def api_analyze_text():
     # Log analysis result
     log_analysis(user_session.get('id'), 'text', text, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
     
+    # Save for relaxation tips
+    session['last_emotion'] = result['emotion']
+    
     return jsonify(result)
 
 
@@ -159,6 +166,7 @@ def api_analyze_image():
         # Log analysis result
         if result.get('face_detected'):
             log_analysis(user_session.get('id'), 'image', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+            session['last_emotion'] = result['emotion']
             
         return jsonify(result)
     finally:
@@ -186,6 +194,7 @@ def api_analyze_image_string():
         
         # Log analysis result
         log_analysis(user_session.get('id'), 'image_camera', None, result['emotion'], result['stress_level'], result['confidence'], result.get('stress_score', 0.0))
+        session['last_emotion'] = result['emotion']
             
         return jsonify(result)
     except Exception as e:
@@ -210,7 +219,8 @@ def api_contact():
         return jsonify({'error': 'All fields are required'}), 400
 
     # In production, save to database or send email
-    print(f"Contact form: {name} ({email}): {message}")
+    logger.info(f"Contact form submission: Name={name}, Email={email}")
+    logger.debug(f"Contact message: {message}")
 
     return jsonify({'success': True, 'message': 'Feedback received successfully!'})
 
@@ -243,8 +253,10 @@ def api_register():
     success = create_user(name, hash_password(password), email, 'user')
     
     if success:
+        logger.info(f"Successfully registered new user: {email}")
         return jsonify({'success': True, 'message': 'Registration successful!'})
     else:
+        logger.error(f"Failed to create user in database: {email}")
         return jsonify({'success': False, 'message': 'Database error during registration'}), 500
 
     return jsonify({'success': True, 'message': 'Registration successful!'})
@@ -263,12 +275,12 @@ def api_login():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
 
-    user = get_user_by_email(email)
-
     if not user or user['password'] != hash_password(password):
+        logger.warning(f"Failed login attempt for email: {email}")
         return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
 
     role = user.get('role', 'user')
+    logger.info(f"User logged in: {email} (Role: {role})")
     session['user'] = {'id': user['id'], 'name': user['username'], 'email': user['email'], 'role': role}
     return jsonify({
         'success': True,
@@ -282,6 +294,77 @@ def api_logout():
     session.pop('user', None)
     return jsonify({'success': True})
 
+
+
+# ===== Relaxation Backend Data =====
+RELAXATION_DATA = {
+    'Happy': {
+        'tips': [
+            "Keep the momentum! Share your positive energy with someone today.",
+            "Write down three things you are grateful for to anchor this feeling.",
+            "Try a creative hobby like drawing or writing while you feel inspired."
+        ],
+        'affirmation': "I am deserving of this joy and I radiate positivity."
+    },
+    'Sad': {
+        'tips': [
+            "Acknowledge your feelings. It's okay to not be okay right now.",
+            "Try Progressive Muscle Relaxation to release the physical weight of sadness.",
+            "Reach out to a trusted friend or write your thoughts in a journal."
+        ],
+        'affirmation': "I am gentle with myself, and this feeling is temporary."
+    },
+    'Angry': {
+        'tips': [
+            "Use the 444 Breathing technique to lower your heart rate immediately.",
+            "Chanel your energy into a physical activity like a brisk walk or workout.",
+            "Try a 'Grounding' exercise: identify 5 things you see, 4 you feel, and 3 you hear."
+        ],
+        'affirmation': "I am in control of my reactions and I choose peace."
+    },
+    'Fearful': {
+        'tips': [
+            "Focus on the present moment. Anxiety lives in the future; peace lives now.",
+            "Try Guided Visualization: imagine a 'safe haven' where you are completely protected.",
+            "Reduce caffeine intake and try a warm, caffeine-free tea."
+        ],
+        'affirmation': "I am safe, I am grounded, and I am stronger than my fears."
+    },
+    'Neutral': {
+        'tips': [
+            "Take a short 'Digital Detox' break. Step away from screens for 15 minutes.",
+            "Drink a glass of water—hydration is key to maintaining steady energy.",
+            "Practice 'Mindful Observation': pick one object and notice every detail for a minute."
+        ],
+        'affirmation': "I am focused, calm, and ready for whatever the day brings."
+    }
+}
+
+@app.route('/api/relaxation/tips', methods=['GET'])
+def api_relaxation_tips():
+    """
+    Get personalized relaxation tips based on the user's most recent analysis.
+    """
+    user_session = session.get('user')
+    # Default to Neutral if no session or no recent sentiment
+    last_emotion = session.get('last_emotion', 'Neutral')
+    
+    # Check for latest log in database if available
+    if user_session:
+        try:
+            from analytics import get_latest_emotion
+            db_emotion = get_latest_emotion(user_session.get('id'))
+            if db_emotion:
+                last_emotion = db_emotion
+        except:
+            pass
+
+    data = RELAXATION_DATA.get(last_emotion, RELAXATION_DATA['Neutral'])
+    return jsonify({
+        'emotion': last_emotion,
+        'tips': data['tips'],
+        'affirmation': data['affirmation']
+    })
 
 
 @app.route('/api/music/recommend', methods=['POST'])
@@ -382,10 +465,10 @@ def api_admin_change_role():
 
 
 if __name__ == '__main__':
-    print(">>> FLASK SERVER STARTING ON PORT 5001")
+    logger.info(">>> [START] FLASK SERVER STARTING ON PORT 5001")
     try:
         app.run(debug=False, port=5001, host='127.0.0.1')
     except Exception as e:
+        logger.critical(f"FATAL STARTUP ERROR: {e}", exc_info=True)
         with open("init_error.log", "w") as f:
             f.write(str(e))
-        print(f"FATAL STARTUP ERROR: {e}")

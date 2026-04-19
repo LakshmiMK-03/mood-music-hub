@@ -1,96 +1,113 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="py-20">
+<section class="py-20" style="background: var(--gradient-main); min-height: 100vh;">
     <div class="container">
-        <div class="text-center mb-12">
-            <h1>Relaxation & <span class="text-gradient">Stress Management</span></h1>
-            <p style="color: var(--muted-foreground); max-width: 700px; margin: 0 auto;">
-                When medium or high stress levels are detected, the system provides breathing exercises, mindfulness
-                suggestions, and break reminders to help manage stress effectively.
+        <div class="text-center mb-16 animate-fade-in">
+            <h1 class="display-sm mb-4">Relaxation & <span class="text-gradient">Wellness Hub</span></h1>
+            <p class="text-muted" style="max-width: 700px; margin: 0 auto; font-size: 1.1rem;">
+                Science-backed tools and personalized mindfulness tips to help you find your calm, no matter the mood.
             </p>
         </div>
 
-        <div style="max-width: 800px; margin: 0 auto; display: grid; gap: 2rem;">
-            <!-- Breathing -->
-            <div class="card p-8 text-center">
-                <h3>🌬 Breathing Exercise</h3>
-                <p style="color: var(--muted-foreground); font-size: 0.875rem; margin-top: 0.5rem;">
-                    Deep breathing activates the parasympathetic nervous system, reducing cortisol and promoting calm.
-                </p>
-                <div style="margin: 2rem 0;">
-                    <div id="breath-circle" class="breath-circle">
-                        <span id="breath-text" style="font-size: 2rem; font-weight: 700; color: white;">Ready</span>
+        <div class="relaxation-grid">
+            <!-- Left Column: Interactive Tools -->
+            <div class="relaxation-main">
+                <!-- Breathing Card -->
+                <div class="glass-card breathing-card text-center mb-8">
+                    <div class="card-badge">INTERACTIVE</div>
+                    <h3 class="mb-2">🌬 Mindful Breathing</h3>
+                    <p class="text-xs text-muted mb-6">Deep breathing lowers cortisol levels and calms the nervous system.</p>
+                    
+                    <div class="breathing-display">
+                        <div id="breath-circle" class="breath-circle">
+                            <div class="breath-inner">
+                                <span id="breath-text">Ready</span>
+                            </div>
+                        </div>
+                        <div class="timer-ring"></div>
+                    </div>
+
+                    <div class="breathing-info mt-8">
+                        <div class="phase-indicators">
+                            <span id="label-inhale">Inhale</span>
+                            <span id="label-hold">Hold</span>
+                            <span id="label-exhale">Exhale</span>
+                        </div>
+                        <p class="text-sm mt-4 text-muted">A simple 4-4-4 cycle for immediate relaxation.</p>
+                    </div>
+
+                    <button id="breath-btn" onclick="toggleBreathing()" class="btn btn-primary btn-lg mt-6" style="width: 240px;">
+                        <i data-lucide="play" style="width: 18px; margin-right: 0.5rem;"></i> Start Exercise
+                    </button>
+                </div>
+
+                <!-- Personalized Tips Card -->
+                <div class="glass-card tips-card">
+                    <div class="card-header">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="icon-box-sm gradient-primary">
+                                <i data-lucide="sparkles" style="width: 18px; color: white;"></i>
+                            </div>
+                            <h3>Personalized <span class="text-gradient">For You</span></h3>
+                        </div>
+                        <div id="mood-badge" class="badge-pill">Emotion: Neutral</div>
+                    </div>
+                    
+                    <div id="tips-container" class="tips-list">
+                        <!-- Tips will be injected via JS -->
+                        <div class="loading-shimmer" style="height: 100px; border-radius: 12px;"></div>
                     </div>
                 </div>
-                <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">Inhale 4 sec → Hold 4 sec → Exhale 4
-                    sec</p>
-                <button id="breath-btn" onclick="toggleBreathing()" class="btn btn-primary">Start Breathing</button>
             </div>
 
-            <!-- Mindfulness Tips -->
-            <div class="card p-6">
-                <h3 class="mb-4">🧘 Mindfulness Suggestions</h3>
-                <ul style="list-style: none;">
-                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Acknowledge Your Feelings</strong> — Take a moment to recognize your emotions without
-                        judgment. Self-awareness is the first step toward emotional balance.
-                    </li>
-                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Stay Present</strong> — Focus on what you can control right now. Mindfulness reduces
-                        anxiety by anchoring you in the present moment.
-                    </li>
-                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Progressive Muscle Relaxation</strong> — Scan your body from head to toe and consciously
-                        relax tight muscles to release physical tension.
-                    </li>
-                    <li style="padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Guided Visualization</strong> — Close your eyes and imagine a peaceful scene — a quiet
-                        beach, a green forest, or a calm sunset — to activate relaxation responses.
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Break Reminders -->
-            <div class="card p-6">
-                <h3 class="mb-4">⏰ Break Reminders</h3>
-                <ul style="list-style: none;">
-                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>20-20-20 Rule</strong> — Every 20 minutes, look at something 20 feet away for 20 seconds
-                        to reduce eye strain.
-                    </li>
-                    <li style="margin-bottom: 1rem; padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Stretch Break</strong> — Stand up every 30–45 minutes and stretch for 2–3 minutes.
-                        Movement increases blood flow and reduces fatigue.
-                    </li>
-                    <li style="padding: 1rem; background: var(--muted); border-radius: 0.75rem;">
-                        <strong>Hydration Check</strong> — Drink water regularly. Dehydration can increase cortisol
-                        (stress hormone) levels.
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Stress Level Info -->
-            <div class="card p-6">
-                <h3 class="mb-4">📊 Understanding Stress Levels</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div style="padding: 1.5rem; background: #dcfce7; border-radius: 0.75rem; text-align: center;">
-                        <span style="font-size: 2rem;">🟢</span>
-                        <h4 style="margin: 0.5rem 0 0.25rem;">Low Stress</h4>
-                        <p style="font-size: 0.875rem; color: #166534;">You're doing well! Enjoy some upbeat music to
-                            maintain your positive mood.</p>
+            <!-- Right Column: Affirmations & Info -->
+            <div class="relaxation-sidebar">
+                <!-- Affirmation Card -->
+                <div class="glass-card affirmation-card mb-8">
+                    <div class="card-header">
+                        <h4 style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="heart" style="width: 18px; color: var(--secondary);"></i> Daily Affirmation
+                        </h4>
                     </div>
-                    <div style="padding: 1.5rem; background: #fef9c3; border-radius: 0.75rem; text-align: center;">
-                        <span style="font-size: 2rem;">🟡</span>
-                        <h4 style="margin: 0.5rem 0 0.25rem;">Medium Stress</h4>
-                        <p style="font-size: 0.875rem; color: #854d0e;">Consider a short break. Try the breathing
-                            exercise above and listen to calming music.</p>
+                    <blockquote id="affirmation-text" class="affirmation-quote">
+                        "Your speed doesn't matter, forward is forward."
+                    </blockquote>
+                    <button onclick="fetchRelaxationTips()" class="btn-ghost text-xs" style="margin-top: 1rem;">
+                        <i data-lucide="refresh-cw" style="width: 12px;"></i> Get New Affirmation
+                    </button>
+                </div>
+
+                <!-- Quick Tips Card -->
+                <div class="glass-card mb-8">
+                    <h4 class="mb-4">⏰ Quick Refreshers</h4>
+                    <div class="mini-tip">
+                        <div class="mini-tip-icon">💧</div>
+                        <div>
+                            <strong>Hydration Check</strong>
+                            <p class="text-xs text-muted">Drink water to lower cortisol.</p>
+                        </div>
                     </div>
-                    <div style="padding: 1.5rem; background: #fee2e2; border-radius: 0.75rem; text-align: center;">
-                        <span style="font-size: 2rem;">🔴</span>
-                        <h4 style="margin: 0.5rem 0 0.25rem;">High Stress</h4>
-                        <p style="font-size: 0.875rem; color: #991b1b;">Take immediate action. Use the mindfulness tips,
-                            breathing exercise, and listen to soothing music.</p>
+                    <div class="mini-tip">
+                        <div class="mini-tip-icon">👀</div>
+                        <div>
+                            <strong>20-20-20 Rule</strong>
+                            <p class="text-xs text-muted">Look 20ft away for 20s.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Understanding Card -->
+                <div class="glass-card">
+                    <h4 class="mb-4">📊 Stress Guide</h4>
+                    <div class="stress-guide-item low">
+                        <span>🟢</span> <strong>Low:</strong> Upbeat vibe
+                    </div>
+                    <div class="stress-guide-item med">
+                        <span>🟡</span> <strong>Medium:</strong> Take a break
+                    </div>
+                    <div class="stress-guide-item high">
+                        <span>🔴</span> <strong>High:</strong> Focus on calm
                     </div>
                 </div>
             </div>
@@ -99,47 +116,269 @@
 </section>
 
 <style>
-    .breath-circle {
-        width: 200px;
-        height: 200px;
-        border-radius: 50%;
+    .relaxation-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    @media (max-width: 992px) {
+        .relaxation-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .glass-card {
+        background: var(--glass);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: var(--glass-border);
+        border-radius: var(--radius);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
         background: var(--gradient-primary);
-        margin: 0 auto;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+
+    /* Breathing Circle UI */
+    .breathing-display {
+        position: relative;
+        height: 280px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 1s ease-in-out, box-shadow 1s ease-in-out;
+    }
+
+    .breath-circle {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 0 50px rgba(99, 102, 241, 0.4);
+        transition: transform 4s cubic-bezier(0.45, 0.05, 0.55, 0.95), box-shadow 4s ease;
+    }
+
+    .breath-inner {
+        width: 90%;
+        height: 90%;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+    }
+
+    #breath-text {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: white;
+        transition: opacity 0.3s;
     }
 
     .breath-circle.inhale {
-        transform: scale(1.2);
+        transform: scale(1.4);
+        box-shadow: 0 0 80px rgba(244, 63, 94, 0.5);
     }
 
     .breath-circle.exhale {
-        transform: scale(0.8);
+        transform: scale(0.9);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
     }
 
-    .card {
-        background: white;
+    .phase-indicators {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+    }
+
+    .phase-indicators span {
+        opacity: 0.3;
+        transition: all 0.3s;
+    }
+
+    .phase-indicators span.active {
+        opacity: 1;
+        color: var(--primary);
+        transform: scale(1.1);
+    }
+
+    /* Tips & Sidebar UI */
+    .tips-list {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .tip-item {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(0, 0, 0, 0.05);
         border-radius: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 1rem;
+        transition: transform 0.2s;
     }
 
-    .p-6 {
-        padding: 1.5rem;
+    .tip-item:hover {
+        transform: translateY(-2px);
+        background: white;
     }
 
-    .p-8 {
-        padding: 2rem;
+    .tip-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
-    .mb-4 {
+    .affirmation-quote {
+        font-family: var(--font-serif);
+        font-size: 1.35rem;
+        line-height: 1.4;
+        font-style: italic;
+        color: var(--foreground);
+        padding-left: 1.5rem;
+        border-left: 4px solid var(--secondary);
+    }
+
+    .mini-tip {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
         margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        background: rgba(255, 255, 255, 0.3);
     }
 
-    .mb-12 {
-        margin-bottom: 3rem;
+    .mini-tip-icon {
+        font-size: 1.5rem;
+    }
+
+    .stress-guide-item {
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+
+    .stress-guide-item.low { background: #dcfce7; color: #166534; }
+    .stress-guide-item.med { background: #fef9c3; color: #854d0e; }
+    .stress-guide-item.high { background: #fee2e2; color: #991b1b; }
+
+    .badge-pill {
+        background: var(--muted);
+        padding: 0.35rem 0.85rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--muted-foreground);
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    // Initialize component logic when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchRelaxationTips();
+    });
+
+    async function fetchRelaxationTips() {
+        const tipsContainer = document.getElementById('tips-container');
+        const affirmationText = document.getElementById('affirmation-text');
+        const moodBadge = document.getElementById('mood-badge');
+
+        try {
+            const res = await fetch('/api/relaxation/tips');
+            const data = await res.json();
+
+            // Update Mood Badge
+            moodBadge.textContent = `Emotion: ${data.emotion}`;
+            moodBadge.style.background = getEmColor(data.emotion);
+            moodBadge.style.color = '#fff';
+
+            // Update Affirmation
+            affirmationText.style.opacity = 0;
+            setTimeout(() => {
+                affirmationText.textContent = `"${data.affirmation}"`;
+                affirmationText.style.opacity = 1;
+            }, 300);
+
+            // Update Tips
+            tipsContainer.innerHTML = '';
+            data.tips.forEach((tip, idx) => {
+                const tipEl = document.createElement('div');
+                tipEl.className = 'tip-item animate-fade-in';
+                tipEl.style.animationDelay = `${idx * 0.1}s`;
+                tipEl.innerHTML = `
+                    <div class="tip-icon">0${idx + 1}</div>
+                    <div>
+                        <p style="font-weight: 500;">${tip}</p>
+                    </div>
+                `;
+                tipsContainer.appendChild(tipEl);
+            });
+
+        } catch (err) {
+            console.error('Error fetching tips:', err);
+        }
+    }
+
+    function getEmColor(em) {
+        const colors = {
+            'Happy': '#10b981',
+            'Sad': '#3b82f6',
+            'Angry': '#ef4444',
+            'Fearful': '#8b5cf6',
+            'Neutral': '#64748b'
+        };
+        return colors[em] || '#64748b';
+    }
+</script>
+{% endblock %}
+bottom: 3rem;
     }
 </style>
 {% endblock %}

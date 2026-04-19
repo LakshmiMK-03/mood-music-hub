@@ -26,7 +26,14 @@ def create_app():
                 template_folder=Config.TEMPLATE_FOLDER)
     
     app.secret_key = Config.SECRET_KEY
-    CORS(app)
+    
+    # Session Cookie Settings (Crucial for Hugging Face Spaces Iframes)
+    # If running in production (like HF Spaces), we need Secure=True and SameSite='None' 
+    is_hf_space = os.getenv('SPACE_ID') is not None
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None' if is_hf_space else 'Lax'
+    app.config['SESSION_COOKIE_SECURE'] = is_hf_space 
+
+    CORS(app, supports_credentials=True)
 
     # Register Blueprints
     app.register_blueprint(views_bp)

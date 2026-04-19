@@ -90,8 +90,11 @@ class SupabaseService:
             "confidence": float(confidence)
         }
         url = f"{self.url}/rest/v1/history"
-        resp = requests.post(url, headers=self._get_headers(), json=data)
-        self._handle_response(resp, f"Error logging analysis for user {user_id}")
+        try:
+            resp = requests.post(url, headers=self._get_headers(), json=data, timeout=5)
+            self._handle_response(resp, f"Error logging analysis for user {user_id}")
+        except Exception as e:
+            logger.error(f"Database logging failed for user {user_id}: {e}")
 
     def get_stats(self):
         url_history = f"{self.url}/rest/v1/history"

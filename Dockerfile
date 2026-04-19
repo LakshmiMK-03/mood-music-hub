@@ -1,12 +1,12 @@
 # Use a lightweight Python base image
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
 # Install system dependencies for OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -19,6 +19,7 @@ COPY src/ ./src/
 COPY main.py .
 
 # Environment variables (Defaults - override in HF Settings)
+ENV PYTHONPATH=/app
 ENV PORT=7860
 ENV HOST=0.0.0.0
 ENV DEBUG=False

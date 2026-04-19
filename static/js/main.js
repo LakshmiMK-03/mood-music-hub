@@ -719,8 +719,12 @@ function onPlayerError(event) {
     // Optional: Show a small toast to the user if many tracks fail
     // showToast(`Skipping restricted track...`);
 
-    // Auto-skip to next video to keep the music flowing
-    playNext();
+    const status = document.getElementById('player-artist');
+    if (status) status.textContent = "Video restricted, skipping in 2s...";
+    
+    setTimeout(() => {
+        playNext();
+    }, 2000);
 }
 
 function togglePlay() {
@@ -782,16 +786,16 @@ function renderPlaylist(emotion) {
     const list = document.getElementById('playlist-tracks');
     list.innerHTML = '<p style="padding: 1rem; color: var(--muted-foreground);">Loading recommendations...</p>';
 
-    // Priority 1: Check Local Dropdown
+    // Priority 1: Check Local Dropdown (Strict Industry Selection)
     const langSelect = document.getElementById('music-lang-select');
     let languages = [];
-    if (langSelect) {
+    if (langSelect && langSelect.value) {
         languages = [langSelect.value];
+        console.debug(`[APP] Using strict industry selection: ${langSelect.value}`);
     } else {
-        // Priority 2: Check URL Params
         const urlParams = new URLSearchParams(window.location.search);
         const langParam = urlParams.get('languages');
-        languages = langParam ? langParam.split(',') : [];
+        languages = langParam ? langParam.split(',') : ['English']; // Default to English if nothing found
     }
 
     // API Call to suggest songs
@@ -817,8 +821,8 @@ function renderPlaylist(emotion) {
             currentVideos = data.videos;
             currentIndex = 0;
 
-            // Show first 10 tracks (Strictly)
-            const initialTracks = currentVideos.slice(0, 10);
+            // Show first 15 tracks (Strictly)
+            const initialTracks = currentVideos.slice(0, 15);
             list.innerHTML = '';
 
             initialTracks.forEach((video, index) => {
@@ -827,12 +831,16 @@ function renderPlaylist(emotion) {
                 list.appendChild(div);
             });
 
-            // Handle "Show More" visibility
+            // Handle "Many More" visibility (Show if we have ANY tracks beyond 15)
             const showMoreContainer = document.getElementById('show-more-container');
-            if (currentVideos.length > 10) {
-                showMoreContainer.style.display = 'block';
-            } else {
-                showMoreContainer.style.display = 'none';
+            if (showMoreContainer) {
+                if (currentVideos.length > 15) {
+                    showMoreContainer.style.display = 'block';
+                    console.info(`[APP] Showing 'Many More' button for ${currentVideos.length - 15} extra tracks.`);
+                } else {
+                    showMoreContainer.style.display = 'none';
+                    console.info("[APP] Not enough tracks for 'Many More' button.");
+                }
             }
 
             // Auto-load the first track without autoplaying immediately
@@ -868,8 +876,8 @@ function createTrackElement(video, index = 0) {
 
 function showMoreTracks() {
     const list = document.getElementById('playlist-tracks');
-    // Show remaining tracks (starting from 10, up to 18 total)
-    const remainingTracks = currentVideos.slice(10);
+    // Show additional tracks (starting from 15, up to 20 total) 
+    const remainingTracks = currentVideos.slice(15);
 
     remainingTracks.forEach((video, index) => {
         const div = createTrackElement(video, index);

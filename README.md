@@ -68,7 +68,7 @@ mood-music-hub/
    TELEGRAM_BOT_TOKEN=your_bot_token
    ```
 
-## 🏃 Running the Application
+## 🏃 Running Locally
 
 To start both the Flask web server and the Telegram bot, simply run:
 
@@ -76,8 +76,21 @@ To start both the Flask web server and the Telegram bot, simply run:
 python main.py
 ```
 
-- **Web Portal:** Access at `http://localhost:5001`
+- **Web Portal:** Access at `http://localhost:7860` (Default)
 - **Telegram Bot:** Start your bot on Telegram to begin interaction.
+
+## 🤗 Deploying to Hugging Face Spaces (Docker)
+
+1. **Create a New Space**: Choose the **Docker** SDK.
+2. **Push Code**: Sync your repository to the Space.
+3. **Configure Secrets**: Go to **Settings -> Secret variables** and add:
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
+   - `YOUTUBE_API_KEY`
+   - `TELEGRAM_BOT_TOKEN`
+   - `HF_TOKEN` (optional)
+   - `FLASK_SECRET_KEY`
+4. **Build**: Hugging Face will automatically build the image using the provided `Dockerfile`.
 
 ## 🛡️ Error Handling & Best Practices
 

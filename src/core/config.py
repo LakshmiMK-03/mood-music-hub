@@ -9,8 +9,8 @@ class Config:
     # Flask Settings
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'mood-music-hub-secret-key-2025')
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-    PORT = int(os.getenv('PORT', 5001))
-    HOST = os.getenv('HOST', '127.0.0.1')
+    PORT = int(os.getenv('PORT', 7860))
+    HOST = os.getenv('HOST', '0.0.0.0')
     
     # Supabase Settings
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")

@@ -73,11 +73,41 @@
 </style>
 
 <script>
-    function handleContactSubmit(e) {
+    async function handleContactSubmit(e) {
         e.preventDefault();
-        document.getElementById('contact-form-wrapper').style.display = 'none';
-        document.getElementById('contact-success').style.display = 'block';
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const name = form.querySelector('input[type="text"]').value;
+        const email = form.querySelector('input[type="email"]').value;
+        const message = form.querySelector('textarea').value;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin" style="width: 18px;"></i> Sending...';
         if (window.lucide) lucide.createIcons();
+
+        try {
+            const response = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, message })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('contact-form-wrapper').style.display = 'none';
+                document.getElementById('contact-success').style.display = 'block';
+                if (window.lucide) lucide.createIcons();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (err) {
+            console.error('Feedback submission error:', err);
+            alert('Something went wrong. Please try again later.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="send" style="width: 18px;"></i> Submit Feedback';
+            if (window.lucide) lucide.createIcons();
+        }
     }
     function resetContactForm() {
         document.getElementById('contact-form').reset();

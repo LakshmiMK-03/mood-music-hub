@@ -276,28 +276,65 @@ function displayResults(data) {
         Neutral: "😐", Fearful: "😨", Surprised: "😲"
     };
 
+    const playlists = {
+        Happy: "Calm Vibes / Positive Energy / Relax Beats",
+        Sad: "Soulful / Melancholic / Emotional Melodies",
+        Angry: "Intense / Energetic / Cathartic Beats",
+        Neutral: "Ambient / Focus / Lo-Fi",
+        Fearful: "Soft / Reassuring / Ambient",
+        Surprised: "Upbeat / Vibrant / Experimental"
+    };
+
+    const suggestions = {
+        Happy: "Take a short walk and maintain your positive routine.",
+        Sad: "Try a 5-minute deep breathing exercise or listen to soothing nature sounds.",
+        Angry: "Take a cooling break, drink water, and practice mindfulness for 10 minutes.",
+        Neutral: "Stay hydrated and continue with your planned activities with focus.",
+        Fearful: "Practice the 4-7-8 breathing technique to calm your nervous system.",
+        Surprised: "Take a moment to process the state and stay centered with a quick stretch."
+    };
+
     const emotion = data.emotion || 'Neutral';
     const stress = data.stress_level || 'Low';
 
+    // Update Basic Info
     document.getElementById('result-emotion').textContent = emotion;
     document.getElementById('result-emoji').textContent = emojis[emotion] || '😐';
     document.getElementById('result-stress').textContent = stress;
-    document.getElementById('result-stress-icon').textContent =
-        stress === "Low" ? "🟢" : stress === "Medium" ? "🟡" : "🔴";
+    
+    const stressEl = document.getElementById('result-stress');
+    const stressIconEl = document.getElementById('result-stress-icon');
+    
+    if (stress === "Low") {
+        stressEl.style.color = "#10b981";
+        stressIconEl.textContent = "🟢";
+    } else if (stress === "Medium") {
+        stressEl.style.color = "#f59e0b";
+        stressIconEl.textContent = "🟡";
+    } else {
+        stressEl.style.color = "#ef4444";
+        stressIconEl.textContent = "🔴";
+    }
+
+    // Update Extended Details (Playlists & Suggestions)
+    const playlistEl = document.getElementById('result-playlist');
+    const suggestionEl = document.getElementById('result-suggestion');
+    if (playlistEl) playlistEl.textContent = playlists[emotion] || playlists.Neutral;
+    if (suggestionEl) suggestionEl.textContent = suggestions[emotion] || suggestions.Neutral;
 
     result.style.display = 'block';
 
     // Re-render Lucide icons inside the result
     if (window.lucide) lucide.createIcons();
 
-    // Show message if face not detected
+    // Show message if face not detected or special backend notes
     if (data.message) {
         let msgEl = document.getElementById('result-message');
         if (!msgEl) {
             msgEl = document.createElement('p');
             msgEl.id = 'result-message';
-            msgEl.style.cssText = 'text-align: center; color: var(--muted-foreground); font-size: 0.875rem; margin-top: 1rem;';
-            result.querySelector('.results-grid').after(msgEl);
+            msgEl.style.cssText = 'text-align: center; color: var(--muted-foreground); font-size: 0.875rem; margin-top: 1.5rem; font-style: italic;';
+            result.querySelector('.p-8').appendChild(msgEl);
         }
         msgEl.textContent = data.message;
         msgEl.style.display = 'block';
@@ -583,6 +620,13 @@ function submitLanguages() {
     console.info("[APP] Submitting language and playback preferences.");
     const checked = document.querySelectorAll('input[name="language"]:checked');
     const languages = Array.from(checked).map(cb => cb.value);
+
+    // Validation: Ensure at least one language is selected
+    if (languages.length === 0) {
+        console.warn("[APP] No language selected, blocking submission.");
+        showToast("Please select the language", "warning");
+        return;
+    }
 
     // Get selected playback format
     const format = document.querySelector('input[name="playback-format"]:checked')?.value || 'both';
@@ -876,11 +920,12 @@ function createTrackElement(video, index = 0) {
 
 function showMoreTracks() {
     const list = document.getElementById('playlist-tracks');
-    // Show additional tracks (starting from 15, up to 20 total) 
+    // Show additional tracks (starting from 15, up to 30 total) 
     const remainingTracks = currentVideos.slice(15);
+    console.info(`[APP] Loading ${remainingTracks.length} additional tracks.`);
 
     remainingTracks.forEach((video, index) => {
-        const div = createTrackElement(video, index);
+        const div = createTrackElement(video, index + 15);
         div.onclick = () => playSong(video.title, video.channelTitle, video.videoId);
         list.appendChild(div);
     });
@@ -960,42 +1005,5 @@ function runBreathCycle() {
 }
 
 
-// ===== Contact Form =====
-function handleContactSubmit(event) {
-    event.preventDefault();
+// Contact logic moved to contact.html template for better per-page management.
 
-    const form = event.target;
-    const inputs = form.querySelectorAll('input, textarea');
-    const data = {};
-
-    inputs.forEach(input => {
-        if (input.type === 'text') data.name = input.value;
-        if (input.type === 'email') data.email = input.value;
-        if (input.tagName === 'TEXTAREA') data.message = input.value;
-    });
-
-    fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-        .then(res => res.json())
-        .then(response => {
-            document.getElementById('contact-form-wrapper').style.display = 'none';
-            document.getElementById('contact-success').style.display = 'block';
-            if (window.lucide) lucide.createIcons();
-        })
-        .catch(err => {
-            console.error('Contact error:', err);
-            // Still show success for demo
-            document.getElementById('contact-form-wrapper').style.display = 'none';
-            document.getElementById('contact-success').style.display = 'block';
-            if (window.lucide) lucide.createIcons();
-        });
-}
-
-function resetContactForm() {
-    document.getElementById('contact-form').reset();
-    document.getElementById('contact-form-wrapper').style.display = 'block';
-    document.getElementById('contact-success').style.display = 'none';
-}

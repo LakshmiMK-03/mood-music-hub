@@ -39,14 +39,9 @@
         </h2>
         <p
             style="max-width: 800px; margin: 0 auto 3rem; color: var(--muted-foreground); font-size: 1.05rem; line-height: 1.8;">
-            In today's fast-paced world, stress and emotional imbalance are growing concerns.
-            Many individuals are unable to openly express their emotions, which may lead to anxiety, depression, and
-            reduced productivity.
-            Music has proven to be an effective tool for emotional regulation and stress reduction.
-            This system is a <strong style="color: var(--foreground);">web-based application</strong> designed to detect
-            user emotions and stress levels and provide
-            <strong style="color: var(--foreground);">personalized music recommendations</strong> along with <strong
-                style="color: var(--foreground);">relaxation tips</strong>.
+            “In today’s fast-paced world, stress and emotional imbalance have become major concerns affecting mental health and productivity. Many individuals struggle to express their emotions effectively, leading to anxiety, depression, and reduced focus.<br><br>
+            Music has proven to be an effective tool for emotional regulation and stress management. This project presents an AI-based web application that detects user emotions and stress levels using text analysis, voice recognition, and facial expression detection.<br><br>
+            Based on the detected emotional state, the system recommends personalized music playlists and provides relaxation tips such as breathing exercises, mindfulness suggestions, and stress-relief activities.”
         </p>
     </div>
 </section>
@@ -105,6 +100,67 @@
                 <h3>Relaxation Tips</h3>
                 <p>When medium or high stress is detected, the system provides breathing exercises, mindfulness
                     suggestions, and break reminders.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: #3b82f6;">
+                    <i data-lucide="shield-check" style="color: white; width: 22px; height: 22px;"></i>
+                </div>
+                <h3>Admin Dashboard</h3>
+                <p>Admin can monitor user activity, analysis logs, recommendation history, and system performance for better management and system maintenance.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- System Output Preview -->
+<section style="padding: 5rem 0; background: #f9fafb;">
+    <div class="container">
+        <h2 class="text-center" style="font-size: 2.25rem; font-weight: 700; margin-bottom: 3.5rem;">
+            System <span class="text-gradient">Output Preview</span>
+        </h2>
+        
+        <div style="max-width: 700px; margin: 0 auto; background: white; border-radius: 2rem; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);">
+            <div style="background: var(--primary); padding: 1.5rem; color: white; text-align: center;">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Example Analysis Result</h3>
+            </div>
+            
+            <div style="padding: 2.5rem;">
+                <!-- Result Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 1.25rem; text-align: center;">
+                        <p style="color: var(--muted-foreground); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 500;">Emotion Detected</p>
+                        <p style="font-weight: 800; font-size: 1.75rem; color: var(--foreground);">Happy 😊</p>
+                    </div>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 1.25rem; text-align: center;">
+                        <p style="color: var(--muted-foreground); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 500;">Stress Level</p>
+                        <p style="font-weight: 800; font-size: 1.75rem; color: #10b981;">Low</p>
+                    </div>
+                </div>
+
+                <!-- Playlist Section -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.75rem; border-radius: 1.25rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <i data-lucide="music" style="width: 20px; color: var(--primary);"></i>
+                        <p style="color: var(--muted-foreground); font-size: 0.95rem; font-weight: 600;">Recommended Playlist</p>
+                    </div>
+                    <p style="font-weight: 600; font-size: 1.15rem; color: var(--foreground);">Calm Vibes / Positive Energy / Relax Beats</p>
+                </div>
+
+                <!-- Relaxation Section -->
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.75rem; border-radius: 1.25rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <i data-lucide="sparkles" style="width: 20px; color: #10b981;"></i>
+                        <p style="color: #166534; font-size: 0.95rem; font-weight: 700;">Relaxation Suggestion</p>
+                    </div>
+                    <p style="color: #14532d; font-size: 1.05rem; line-height: 1.6;">Take a short walk and maintain your positive routine.</p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="/analyze" class="btn btn-primary" style="padding: 1rem 2.5rem; border-radius: 1rem; font-weight: 700; font-size: 1.1rem;">
+                        <i data-lucide="activity" style="width: 20px; margin-right: 0.5rem;"></i>
+                        Analyze Your Mood Now
+                    </a>
+                </div>
             </div>
         </div>
     </div>

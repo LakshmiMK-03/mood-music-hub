@@ -55,11 +55,18 @@ class TelegramBot:
                 res = emotion_engine.analyze_text(message.text)
                 emotion = res['emotion']
                 reply = f"🧠 *Detected:* {emotion} {EMOJI_MAP.get(emotion, '😐')}\n🎧 Choose language:"
-                self.bot.edit_message_text(reply, message.chat.id, processing.message_id, 
-                                          parse_mode="Markdown", reply_markup=self._get_language_keyboard(emotion))
+                
+                try:
+                    self.bot.edit_message_text(reply, message.chat.id, processing.message_id, 
+                                              parse_mode="Markdown", reply_markup=self._get_language_keyboard(emotion))
+                except telebot.apihelper.ApiTelegramException as e:
+                    if "message is not modified" not in e.description:
+                        raise
             except Exception as e:
                 logger.error(f"Bot text error: {e}")
-                self.bot.edit_message_text("❌ Error analyzing text.", message.chat.id, processing.message_id)
+                try:
+                    self.bot.edit_message_text("❌ Error analyzing text.", message.chat.id, processing.message_id)
+                except: pass
 
         @self.bot.message_handler(content_types=['photo'])
         def photo_mood(message):
@@ -80,11 +87,18 @@ class TelegramBot:
                 
                 emotion = res['emotion']
                 reply = f"🧠 *Detected:* {emotion} {EMOJI_MAP.get(emotion, '😐')}\n🎧 Choose language:"
-                self.bot.edit_message_text(reply, message.chat.id, processing.message_id,
-                                          parse_mode="Markdown", reply_markup=self._get_language_keyboard(emotion))
+                
+                try:
+                    self.bot.edit_message_text(reply, message.chat.id, processing.message_id,
+                                              parse_mode="Markdown", reply_markup=self._get_language_keyboard(emotion))
+                except telebot.apihelper.ApiTelegramException as e:
+                    if "message is not modified" not in e.description:
+                        raise
             except Exception as e:
                 logger.error(f"Bot photo error: {e}")
-                self.bot.edit_message_text("❌ Error analyzing photo.", message.chat.id, processing.message_id)
+                try:
+                    self.bot.edit_message_text("❌ Error analyzing photo.", message.chat.id, processing.message_id)
+                except: pass
 
         @self.bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
         def lang_select(call):
@@ -92,17 +106,25 @@ class TelegramBot:
             if len(parts) >= 3:
                 emotion, lang = parts[1], parts[2]
                 self.bot.answer_callback_query(call.id, f"Fetching {lang}...")
-                self.bot.edit_message_text(f"🎵 Finding {lang} {emotion} music...", call.message.chat.id, call.message.message_id)
+                try:
+                    self.bot.edit_message_text(f"🎵 Finding {lang} {emotion} music...", call.message.chat.id, call.message.message_id)
+                except: pass
                 
                 videos = youtube_service.search_music(emotion, [lang])
                 if not videos:
-                    self.bot.edit_message_text("❌ No recommendations found.", call.message.chat.id, call.message.message_id)
+                    try:
+                        self.bot.edit_message_text("❌ No recommendations found.", call.message.chat.id, call.message.message_id)
+                    except: pass
                     return
                 
                 reply = f"🎧 *Top {lang} for {emotion} Mood:*\n\n"
                 for idx, v in enumerate(videos[:3]):
                     reply += f"{idx+1}. [{v['title']}](https://www.youtube.com/watch?v={v['videoId']})\n\n"
-                self.bot.edit_message_text(reply, call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+                try:
+                    self.bot.edit_message_text(reply, call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+                except telebot.apihelper.ApiTelegramException as e:
+                    if "message is not modified" not in e.description:
+                        raise
 
     def start(self):
         if not self.bot: return

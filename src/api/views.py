@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, current_app
+from flask import Blueprint, render_template, session, redirect, current_app, request
 from src.services import supabase_service
 from src.core.constants import RELAXATION_DATA
 
@@ -60,3 +60,19 @@ def get_relaxation_tips():
         'tips': data['tips'],
         'affirmation': data['affirmation']
     }
+
+@views_bp.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    data = request.get_json() or {}
+    name = data.get('name')
+    email = data.get('email')
+    message = data.get('message')
+    
+    if not all([name, email, message]):
+        return {'success': False, 'message': 'Missing required fields'}, 400
+        
+    success = supabase_service.log_feedback(name, email, message)
+    if success:
+        return {'success': True, 'message': 'Feedback received!'}
+    else:
+        return {'success': False, 'message': 'Failed to save feedback'}, 500

@@ -617,12 +617,6 @@
         <a href="#" class="sidebar-link" onclick="scrollToSection('charts-section', this)">
             <i data-lucide="bar-chart-3" style="width:18px;"></i> Analysis
         </a>
-        <a href="#" class="sidebar-link" onclick="scrollToSection('users-section', this)">
-            <i data-lucide="users" style="width:18px;"></i> Registered Users
-        </a>
-        <a href="#" class="sidebar-link" onclick="scrollToSection('activity-section', this)">
-            <i data-lucide="clock" style="width:18px;"></i> Recent Activity
-        </a>
 
         <div class="sidebar-spacer"></div>
 
@@ -743,100 +737,7 @@
                 </div>
             </div>
 
-            <!-- Users Table -->
-            <div class="table-section" id="users-section">
-                <div class="table-header">
-                    <h3><i data-lucide="users" style="width:18px; color:var(--green);"></i> Registered Users</h3>
-                    <div class="search-box">
-                        <i data-lucide="search" style="width:16px; color:var(--muted-fg);"></i>
-                        <input type="text" id="user-search" placeholder="Search users..." oninput="filterUsers()">
-                    </div>
-                </div>
 
-                <!-- Loading State -->
-                <div id="table-loading" class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Loading users...</p>
-                </div>
-
-                <!-- Error State -->
-                <div id="table-error" class="error-state" style="display:none;">
-                    <div class="empty-icon">⚠️</div>
-                    <p style="font-weight:600; margin-bottom:0.25rem;">Failed to load users</p>
-                    <p style="font-size:0.85rem;">Please check your connection and try again.</p>
-                    <button onclick="loadUsers()" class="act-btn"
-                        style="margin-top:1rem; padding:0.5rem 1.25rem;">Retry</button>
-                </div>
-
-                <!-- Empty State -->
-                <div id="table-empty" class="empty-state" style="display:none;">
-                    <div class="empty-icon">👤</div>
-                    <p style="font-weight:600; margin-bottom:0.25rem;">No users found</p>
-                    <p style="font-size:0.85rem;">Try adjusting your search query.</p>
-                </div>
-
-                <!-- Table -->
-                <div style="overflow-x:auto;">
-                    <table class="admin-table" id="users-table" style="display:none;">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Date Joined</th>
-                                <th>Last Login</th>
-                                <th style="text-align:right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="activity-section" id="activity-section">
-                <h3><i data-lucide="clock" style="width:18px; color:var(--green);"></i> Recent Activity</h3>
-                <div class="activity-item">
-                    <div class="activity-dot" style="background:var(--blue);"></div>
-                    <div>
-                        <div class="activity-text"><strong>User Lakshmi</strong> performed emotion analysis (Text Input)
-                        </div>
-                        <div class="activity-time">2 minutes ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot" style="background:var(--green);"></div>
-                    <div>
-                        <div class="activity-text"><strong>User Ravi</strong> logged in successfully</div>
-                        <div class="activity-time">15 minutes ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot" style="background:var(--purple);"></div>
-                    <div>
-                        <div class="activity-text"><strong>Admin</strong> updated music playlist for "Happy" emotion
-                        </div>
-                        <div class="activity-time">1 hour ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot" style="background:var(--orange);"></div>
-                    <div>
-                        <div class="activity-text"><strong>User Priya</strong> uploaded a face image for analysis</div>
-                        <div class="activity-time">3 hours ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot" style="background:var(--pink);"></div>
-                    <div>
-                        <div class="activity-text"><strong>System</strong> detected high stress for user and recommended
-                            relaxation tips</div>
-                        <div class="activity-time">5 hours ago</div>
-                    </div>
-                </div>
-            </div>
 
         </div>
     </div>
@@ -893,7 +794,7 @@
         });
 
         // ===== Sidebar Navigation =====
-        const allSections = ['stats-section', 'charts-section', 'users-section', 'activity-section'];
+        const allSections = ['stats-section', 'charts-section'];
 
         function scrollToSection(sectionId, clickedLink) {
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -917,24 +818,6 @@
         function handleLogout() {
             fetch('/api/logout', { method: 'POST' }).then(() => { window.location.href = '/login'; });
         }
-
-        // ===== Load Users =====
-        let allUsers = [];
-
-        async function loadUsers() {
-            // Fetch users (already exists)
-            try {
-                const res = await fetch('/api/admin/users');
-                if (res.status === 403) { window.location.href = '/login'; return; }
-                const data = await res.json();
-                allUsers = data.users;
-                // updateStats(); // Will be called by LoadDashboardData
-                renderUsers(allUsers);
-            } catch (e) {
-                console.error("Error loading users:", e);
-            }
-        }
-
         async function loadDashboardData() {
             try {
                 const res = await fetch('/api/admin/stats');
@@ -949,142 +832,12 @@
                 // Update Charts
                 renderEmotionChart(data.emotion_dist);
                 renderStressChart(data.stress_dist);
-                
-                // Update Activity
-                renderActivity(data.recent_activity);
             } catch (e) {
                 console.error("Error loading stats:", e);
             }
         }
 
-        function renderActivity(activities) {
-            const container = document.getElementById('activity-section');
-            if (!container) return;
-            
-            // Keep the header
-            const header = container.querySelector('h3').outerHTML;
-            let html = header;
-            
-            if (activities.length === 0) {
-                html += '<p style="padding: 1rem; color: var(--muted-fg); font-size: 0.875rem;">No recent activity</p>';
-            } else {
-                activities.forEach(act => {
-                    const time = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const details = act.source === 'text' ? `"${act.text_preview}"` : "Image Upload";
-                    const dotColor = act.emotion === 'Happy' ? 'var(--green)' : 
-                                    (act.emotion === 'Sad' ? 'var(--blue)' : 
-                                    (act.emotion === 'Angry' ? 'var(--red)' : 
-                                    (act.emotion === 'Fearful' ? 'var(--orange)' : 'var(--muted-fg)')));
-                    
-                    html += `
-                        <div class="activity-item">
-                            <div class="activity-dot" style="background:${dotColor};"></div>
-                            <div>
-                                <div class="activity-text">Detected <strong>${act.emotion}</strong> via ${act.source} analysis ${details}</div>
-                                <div class="activity-time">${time}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            container.innerHTML = html;
-        }
 
-        const dummyDates = ['2026-01-15', '2026-01-28', '2026-02-03', '2026-02-08', '2026-02-11'];
-        const dummyLogins = ['Today', 'Yesterday', '2 days ago', '5 days ago', '1 week ago'];
-
-        function renderUsers(users) {
-            const loading = document.getElementById('table-loading');
-            const emptyEl = document.getElementById('table-empty');
-            const table = document.getElementById('users-table');
-            const tbody = document.getElementById('users-tbody');
-
-            loading.style.display = 'none';
-
-            if (users.length === 0) {
-                emptyEl.style.display = 'block';
-                table.style.display = 'none';
-                return;
-            }
-
-            emptyEl.style.display = 'none';
-            table.style.display = 'table';
-            tbody.innerHTML = '';
-
-            users.forEach((user, i) => {
-                const isDefault = user.email === 'admin@moodmusic.com';
-                const roleClass = user.role === 'admin' ? 'badge-admin' : 'badge-user';
-                const joined = dummyDates[i % dummyDates.length];
-                const lastLogin = dummyLogins[i % dummyLogins.length];
-                const status = isDefault ? 'active' : (i % 5 === 3 ? 'disabled' : 'active');
-                const statusClass = status === 'active' ? 'badge-active' : 'badge-disabled';
-                const toggleLabel = user.role === 'admin' ? 'Demote' : 'Promote';
-
-                let actions = '';
-                if (!isDefault) {
-                    actions = `
-                <button class="act-btn" onclick="toggleRole('${user.email}', '${user.role === 'admin' ? 'user' : 'admin'}')" title="${toggleLabel}">${toggleLabel}</button>
-                <button class="act-btn warn" onclick="alert('Disable feature coming soon')" title="Disable">Disable</button>
-                <button class="act-btn danger" onclick="deleteUser('${user.email}')" title="Delete">Delete</button>
-            `;
-                } else {
-                    actions = '<span style="color:var(--muted-fg); font-size:0.75rem;">Protected</span>';
-                }
-
-                tbody.innerHTML += `
-            <tr>
-                <td style="font-weight:600; color:var(--muted-fg);">${i + 1}</td>
-                <td style="font-weight:600;">${user.name}</td>
-                <td>${user.email}</td>
-                <td><span class="badge ${roleClass}">${user.role}</span></td>
-                <td><span class="badge ${statusClass}">${status}</span></td>
-                <td style="color:var(--muted-fg); font-size:0.8rem;">${joined}</td>
-                <td style="color:var(--muted-fg); font-size:0.8rem;">${lastLogin}</td>
-                <td style="text-align:right;"><div class="action-group" style="justify-content:flex-end;">${actions}</div></td>
-            </tr>
-        `;
-            });
-        }
-
-        function filterUsers() {
-            const query = document.getElementById('user-search').value.toLowerCase();
-            const filtered = allUsers.filter(u =>
-                u.name.toLowerCase().includes(query) ||
-                u.email.toLowerCase().includes(query) ||
-                u.role.toLowerCase().includes(query)
-            );
-            renderUsers(filtered);
-        }
-
-        async function toggleRole(email, newRole) {
-            const confirmed = await showConfirm({
-                title: 'Change Role',
-                message: `Are you sure you want to change the role for ${email} to "${newRole}"?`,
-                type: 'info'
-            });
-            if (!confirmed) return;
-            await fetch('/api/admin/users/role', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, role: newRole })
-            });
-            loadUsers();
-        }
-
-        async function deleteUser(email) {
-            const confirmed = await showConfirm({
-                title: 'Delete User',
-                message: `Are you sure you want to permanently delete ${email}? This action cannot be undone.`,
-                type: 'danger'
-            });
-            if (!confirmed) return;
-            await fetch('/api/admin/users/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            loadUsers();
-        }
 
         // ===== Charts =====
         let emotionChart, stressChart;
@@ -1150,7 +903,6 @@
         }
 
         // ===== Init =====
-        loadUsers();
         loadDashboardData();
         // Refresh data every 30 seconds
         setInterval(loadDashboardData, 30000);

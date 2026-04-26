@@ -28,8 +28,7 @@
             <!-- Tab Content -->
             <div id="text-tab" class="tab-content active">
                 <div class="card p-6">
-                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">How are you feeling
-                        today?</label>
+                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Describe Your Current Emotional State</label>
                     <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
                         Your text will be processed using <strong>Tokenization</strong>, <strong>Stop-word
                             Removal</strong>,
@@ -37,7 +36,7 @@
                         ML algorithms.
                     </p>
                     <textarea id="text-input"
-                        placeholder="Type your thoughts, feelings, or describe your current emotional state..." rows="5"
+                        placeholder="Enter your thoughts, feelings, mood, or emotional concerns here for analysis..." rows="5"
                         class="input-field"></textarea>
                     <button onclick="analyzeEmotion()" class="btn btn-primary mt-4" style="width: 100%;">Analyze
                         Emotion</button>
@@ -49,7 +48,7 @@
                     <button id="record-btn" onclick="toggleRecording()" class="record-btn">
                         <i data-lucide="mic" class="mic-icon"></i>
                     </button>
-                    <p id="record-status" style="margin-top: 1rem; font-weight: 600;">Click to start recording</p>
+                    <p id="record-status" style="margin-top: 1rem; font-weight: 600;">Record Your Voice for Emotion Detection</p>
                     <p style="color: var(--muted-foreground); font-size: 0.875rem;">
                         Your voice will be converted to text using <strong>Speech-to-Text</strong> technology and
                         analyzed using the same NLP + ML pipeline.
@@ -69,7 +68,7 @@
                     
                     <div id="upload-container">
                         <p style="font-size: 0.85rem; color: var(--muted-foreground); margin-bottom: 1rem;">
-                            Upload a face image for processing using <strong>OpenCV</strong> and <strong>CNN</strong> models.
+                            Upload Facial Image for Emotion Recognition using <strong>OpenCV</strong> and <strong>CNN</strong> models.
                         </p>
                         <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)"
                             class="input-field" style="padding: 0.5rem;">
@@ -112,30 +111,53 @@
                 <p>Analyzing your emotion...</p>
             </div>
 
-            <div id="analysis-result" style="display: none; margin-top: 2rem;" class="card p-8 animation-scale-in">
-                <h3 class="text-center mb-6">Analysis Results</h3>
-                <div class="results-grid">
-                    <div class="result-box">
-                        <span id="result-emoji" style="font-size: 3rem;"></span>
-                        <p style="color: var(--muted-foreground);">Detected Emotion</p>
-                        <p id="result-emotion" style="font-weight: 700; font-size: 1.25rem;"></p>
-                    </div>
-                    <div class="result-box">
-                        <span id="result-stress-icon" style="font-size: 3rem;"></span>
-                        <p style="color: var(--muted-foreground);">Stress Level</p>
-                        <p id="result-stress" style="font-weight: 700; font-size: 1.25rem;"></p>
-                    </div>
-
+            <div id="analysis-result" style="display: none; margin-top: 2rem;" class="card animation-scale-in overflow-hidden shadow-xl">
+                <div style="background: var(--primary); padding: 1.25rem; color: white; text-align: center;">
+                    <h3 style="font-size: 1.25rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Analysis Results</h3>
                 </div>
+                
+                <div class="p-8">
+                    <div class="results-grid mb-8">
+                        <div class="result-box" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 1.25rem; text-align: center;">
+                            <span id="result-emoji" style="font-size: 3.5rem; display: block; margin-bottom: 0.5rem;"></span>
+                            <p style="color: var(--muted-foreground); font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">Detected Emotion</p>
+                            <p id="result-emotion" style="font-weight: 800; font-size: 1.5rem; color: var(--foreground);"></p>
+                        </div>
+                        <div class="result-box" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 1.25rem; text-align: center;">
+                            <span id="result-stress-icon" style="font-size: 3.5rem; display: block; margin-bottom: 0.5rem;"></span>
+                            <p style="color: var(--muted-foreground); font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">Stress Level</p>
+                            <p id="result-stress" style="font-weight: 800; font-size: 1.5rem;"></p>
+                        </div>
+                    </div>
 
-                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
-                    <button onclick="showLanguageModal()" class="btn btn-primary">
-                        View Music Recommendations <i data-lucide="arrow-right"
-                            style="margin-left: 0.5rem; width: 16px;"></i>
-                    </button>
-                    <a href="/relaxation" class="btn btn-outline">
-                        Relaxation Tips <i data-lucide="heart" style="margin-left: 0.5rem; width: 16px;"></i>
-                    </a>
+                    <!-- Enhanced Result Details (Playlists & Suggestions) -->
+                    <div id="result-details" style="display: block;">
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 1.25rem; margin-bottom: 1.25rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem;">
+                                <i data-lucide="music" style="width: 18px; color: var(--primary);"></i>
+                                <span style="color: var(--muted-foreground); font-size: 0.9rem; font-weight: 700;">Recommended Playlist Archetype</span>
+                            </div>
+                            <p id="result-playlist" style="font-weight: 700; font-size: 1.15rem; color: var(--foreground);">Calm Vibes / Positive Energy / Relax Beats</p>
+                        </div>
+
+                        <div id="result-suggestion-card" style="padding: 1.5rem; border-radius: 1.25rem; border: 1px solid #e2e8f0; margin-bottom: 2.5rem; background: #fff;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem;">
+                                <i data-lucide="sparkles" id="suggestion-icon" style="width: 18px; color: #10b981;"></i>
+                                <span id="suggestion-label" style="font-size: 0.9rem; font-weight: 700; color: #166534;">Relaxation Suggestion</span>
+                            </div>
+                            <p id="result-suggestion" style="font-size: 1.05rem; line-height: 1.6; color: #14532d;">Take a short walk and maintain your positive routine.</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="showLanguageModal()" class="btn btn-primary" style="padding: 0.85rem 2rem; border-radius: 0.75rem; font-weight: 700;">
+                            Get Music Recommendations <i data-lucide="arrow-right"
+                                style="margin-left: 0.5rem; width: 18px;"></i>
+                        </button>
+                        <a href="/relaxation" class="btn btn-outline" style="padding: 0.85rem 2rem; border-radius: 0.75rem; font-weight: 700;">
+                            View Relaxation Tips <i data-lucide="heart" style="margin-left: 0.5rem; width: 18px;"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,10 +182,6 @@
                 <label class="lang-option">
                     <input type="checkbox" name="language" value="English" onchange="handleLangSelection(this)">
                     <span class="lang-label">English (Global)</span>
-                </label>
-                <label class="lang-option">
-                    <input type="checkbox" name="language" value="Spanish" onchange="handleLangSelection(this)">
-                    <span class="lang-label">Spanish (Latin)</span>
                 </label>
                 <label class="lang-option">
                     <input type="checkbox" name="language" value="Tamil" onchange="handleLangSelection(this)">
